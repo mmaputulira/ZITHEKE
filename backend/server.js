@@ -94,6 +94,7 @@ const allowedOrigins = [
   "https://zitheke.com",
   "https://www.zitheke.com",
   "https://admin.zitheke.com",
+  "https://api.zitheke.com",
 ];
 
 const isAllowedOrigin = (origin) => !origin || allowedOrigins.includes(origin);
