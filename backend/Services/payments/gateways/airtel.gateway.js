@@ -410,7 +410,6 @@ export default class AirtelGateway extends BaseGateway {
           payerMsisdn: normalized,
           rawRequestPayload,
           rawResponsePayload: {
-            oauth: tokenResponse,
             collection: response?.data || null,
           },
           normalizedResponse,
@@ -512,7 +511,6 @@ export default class AirtelGateway extends BaseGateway {
       return {
         rawRequestPayload,
         rawResponsePayload: {
-          oauth: tokenResponse,
           verification: response?.data || null,
         },
         normalizedResponse,

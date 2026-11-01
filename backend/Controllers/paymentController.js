@@ -1,6 +1,15 @@
 import paymentOrchestratorService from "../Services/payments/paymentOrchestrator.service.js";
 import paymentVerificationService from "../Services/payments/paymentVerification.service.js";
 
+const toSafePayment = (payment) => {
+  if (!payment) return payment;
+  const value = typeof payment.toObject === "function" ? payment.toObject() : { ...payment };
+  delete value.rawRequestPayload;
+  delete value.rawResponsePayload;
+  delete value.rawVerificationResponse;
+  return value;
+};
+
 const logPaymentError = (label, error) => {
   console.error(label, {
     message: error?.message || "Unknown error",
@@ -45,7 +54,7 @@ export const createPaymentIntent = async (req, res) => {
       message: result.reused
         ? "Existing payment intent returned"
         : "Payment intent created successfully",
-      payment: result.payment,
+      payment: toSafePayment(result.payment),
       gateway: result.gateway,
       initiation: result.initiation,
       reused: result.reused,
@@ -66,7 +75,7 @@ export const getPaymentById = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      payment,
+      payment: toSafePayment(payment),
     });
   } catch (error) {
     logPaymentError("Error fetching payment", error);
@@ -82,7 +91,7 @@ export const getPaymentHistory = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      payments,
+      payments: payments.map(toSafePayment),
     });
   } catch (error) {
     logPaymentError("Error fetching payment history", error);
@@ -103,7 +112,7 @@ export const verifyPayment = async (req, res) => {
       message: result.reused
         ? "Payment already verified"
         : "Payment verification completed",
-      payment: result.payment,
+      payment: toSafePayment(result.payment),
       subscription: result.subscription || null,
       verification: result.verification,
       reused: result.reused,

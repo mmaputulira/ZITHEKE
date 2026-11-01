@@ -12,6 +12,7 @@ const PENDING_PAYMENT_STATUSES = [
   PAYMENT_STATUSES.CREATED,
   PAYMENT_STATUSES.INITIATED,
   PAYMENT_STATUSES.PENDING,
+  PAYMENT_STATUSES.POP_SUBMITTED,
 ];
 const PENDING_VERIFICATION_FILTER = {
   $or: [
@@ -21,6 +22,7 @@ const PENDING_VERIFICATION_FILTER = {
         $in: [
           PAYMENT_VERIFICATION_STATUSES.PENDING_VERIFICATION,
           PAYMENT_VERIFICATION_STATUSES.GATEWAY_CONFIGURATION_ERROR,
+          PAYMENT_VERIFICATION_STATUSES.PENDING_REVIEW,
         ],
       },
     },
@@ -298,9 +300,18 @@ const getSubscriptionAnalytics = async (query = {}) => {
         as: "payment",
       },
     },
+    {
+      $lookup: {
+        from: "ads",
+        localField: "adId",
+        foreignField: "_id",
+        as: "ad",
+      },
+    },
     { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
     { $unwind: { path: "$plan", preserveNullAndEmptyArrays: true } },
     { $unwind: { path: "$payment", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$ad", preserveNullAndEmptyArrays: true } },
   ];
 
   if (searchRegex) {
@@ -310,6 +321,9 @@ const getSubscriptionAnalytics = async (query = {}) => {
           { "user.name": searchRegex },
           { "user.email": searchRegex },
           { "user.phone": searchRegex },
+          { "ad.title": searchRegex },
+          { subscriptionReference: searchRegex },
+          { "payment.paymentReference": searchRegex },
         ],
       },
     });
@@ -326,6 +340,7 @@ const getSubscriptionAnalytics = async (query = {}) => {
       $project: {
         _id: 0,
         subscriptionId: "$_id",
+        subscriptionReference: "$subscriptionReference",
         userId: "$user._id",
         name: "$user.name",
         email: "$user.email",
@@ -333,6 +348,11 @@ const getSubscriptionAnalytics = async (query = {}) => {
         planId: "$plan._id",
         planName: "$plan.name",
         planSlug: "$plan.slug",
+        adId: "$ad._id",
+        adTitle: "$ad.title",
+        adPrice: "$ad.price",
+        adCurrency: "$ad.currency",
+        scope: "$scope",
         subscriptionStatus: "$status",
         paymentStatus: "$payment.status",
         paymentVerificationStatus: "$payment.verificationStatus",
@@ -344,6 +364,9 @@ const getSubscriptionAnalytics = async (query = {}) => {
         expiredAt: "$expiredAt",
         paymentId: "$payment._id",
         merchantTransactionId: "$payment.merchantTransactionId",
+        paymentReference: "$payment.paymentReference",
+        receiptReference: "$payment.receiptReference",
+        bankTransactionReference: "$payment.bankTransactionReference",
         gatewayTransactionId: "$payment.gatewayTransactionId",
         createdAt: "$createdAt",
         updatedAt: "$updatedAt",
@@ -422,7 +445,16 @@ const getPaymentAnalytics = async (query = {}) => {
         as: "plan",
       },
     },
+    {
+      $lookup: {
+        from: "ads",
+        localField: "adId",
+        foreignField: "_id",
+        as: "ad",
+      },
+    },
     { $unwind: { path: "$plan", preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: "$ad", preserveNullAndEmptyArrays: true } },
   ];
 
   if (searchRegex) {
@@ -433,7 +465,11 @@ const getPaymentAnalytics = async (query = {}) => {
           { "user.email": searchRegex },
           { "user.phone": searchRegex },
           { merchantTransactionId: searchRegex },
+          { paymentReference: searchRegex },
+          { receiptReference: searchRegex },
+          { bankTransactionReference: searchRegex },
           { gatewayTransactionId: searchRegex },
+          { "ad.title": searchRegex },
         ],
       },
     });
@@ -452,6 +488,9 @@ const getPaymentAnalytics = async (query = {}) => {
         planId: "$plan._id",
         planName: "$plan.name",
         planSlug: "$plan.slug",
+        adId: "$ad._id",
+        adTitle: "$ad.title",
+        purchaseType: "$purchaseType",
         gateway: "$gateway",
         paymentMethod: "$paymentMethod",
         amount: "$amount",
@@ -459,6 +498,9 @@ const getPaymentAnalytics = async (query = {}) => {
         status: "$status",
         verificationStatus: "$verificationStatus",
         merchantTransactionId: "$merchantTransactionId",
+        paymentReference: "$paymentReference",
+        receiptReference: "$receiptReference",
+        bankTransactionReference: "$bankTransactionReference",
         gatewayTransactionId: "$gatewayTransactionId",
         gatewayCode: "$gatewayCode",
         gatewayMessage: "$gatewayMessage",

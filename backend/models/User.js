@@ -37,11 +37,22 @@ const userSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["Active", "Suspended"],
+      enum: ["Active", "Inactive", "Under Review", "Suspended"],
       default: "Active",
     },
     verified: { type: Boolean, default: false },
     role: { type: String, enum: ["user", "admin"], default: "user" },
+    accountType: { type: String, enum: ["merchant", "buyer"], default: "merchant", index: true },
+    merchantStatus: { type: String, enum: ["active", "pending", "rejected", "suspended"], default: "active", index: true },
+    merchantVerified: { type: Boolean, default: false },
+    merchantApplication: {
+      businessName: { type: String, default: "", maxlength: 160 },
+      note: { type: String, default: "", maxlength: 1000 },
+      requestedAt: { type: Date, default: null },
+      reviewedAt: { type: Date, default: null },
+      reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Admin", default: null },
+      reason: { type: String, default: "", maxlength: 500 },
+    },
     adsPosted: { type: Number, default: 0 },
     lastLogin: { type: Date, default: Date.now },
 
@@ -59,7 +70,7 @@ userSchema.index(
   { phone: 1 },
   {
     unique: true,
-    partialFilterExpression: { phone: { $type: "string", $ne: "" } },
+    partialFilterExpression: { phone: { $type: "string", $gt: "" } },
   }
 );
 

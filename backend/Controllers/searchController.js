@@ -1,3 +1,4 @@
+import { activeMerchantUids } from "../Services/publicMerchants.service.js";
 import Category from "../models/Category.js";
 import Service from "../models/Service.js";
 import SearchLog from "../models/SearchLog.js";
@@ -54,8 +55,8 @@ export const globalSearch = async (req, res) => {
     const categories = q
       ? await Category.find({
           $or: [
-            { name: { $regex: q, $options: "i" } },
-            { keywords: { $regex: q, $options: "i" } },
+            { name: { $regex: escapeRegex(q), $options: "i" } },
+            { keywords: { $regex: escapeRegex(q), $options: "i" } },
           ],
         })
           .select("name slug")
@@ -68,8 +69,8 @@ export const globalSearch = async (req, res) => {
     const services = q
       ? await Service.find({
           $or: [
-            { name: { $regex: q, $options: "i" } },
-            { keywords: { $regex: q, $options: "i" } },
+            { name: { $regex: escapeRegex(q), $options: "i" } },
+            { keywords: { $regex: escapeRegex(q), $options: "i" } },
           ],
         })
           .select("name category")
@@ -82,7 +83,8 @@ export const globalSearch = async (req, res) => {
     const tokens = tokenizeQuery(q);
     const ads = tokens.length
       ? await Ad.find({
-          status: { $in: ["Approved", "Active"] },
+          status: "Approved",
+          ownerUid:{$in:await activeMerchantUids()},
           $and: buildTokenAnd(tokens, "title"),
         })
           .select("title category subcategory")
@@ -140,7 +142,8 @@ export const getAds = async (req, res) => {
     // BASE FILTER
     // -----------------------------
     const filters = {
-      status: { $in: ["Approved", "Active"] },
+      status: "Approved",
+          ownerUid:{$in:await activeMerchantUids()},
     };
 
     // -----------------------------
@@ -152,7 +155,7 @@ export const getAds = async (req, res) => {
     // -----------------------------
     if (location) {
       filters.city = {
-        $regex: `^${location}`,
+        $regex: escapeRegex(location),
         $options: "i",
       };
     }

@@ -1,196 +1,47 @@
-import React, { useState } from "react";
+import { useAdminAccess } from "../../AdminRoutes/AdminAccessContext.jsx";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Camera, Lock, Save, Mail, Phone, User } from "lucide-react";
+import { Lock, Save, Mail, Phone, User, ShieldCheck } from "lucide-react";
+import Swal from "sweetalert2";
+import adminApi from "../../api/adminApi";
+
+const Field = ({ label, icon: Icon, ...props }) => (
+  <label className="block">
+    <span className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-700"><Icon size={16}/>{label}</span>
+    <input {...props} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition focus:border-[#2E3192] focus:bg-white focus:ring-4 focus:ring-[#2E3192]/10"/>
+  </label>
+);
 
 const AdminSettings = () => {
-  const [form, setForm] = useState({
-    name: "Admin User",
-    email: "dkumaralinafeonline@gmail.com",
-    phone: "+91 9457982221",
-    profilePhoto: "https://res.cloudinary.com/dxah12xl4/image/upload/v1763808552/zitheke/users/c42ec9yxbuxbabhai0dh.jpg",
-    oldPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
+ const {can}=useAdminAccess();
+  const [profile,setProfile]=useState({name:"",email:"",phone:"",role:""});
+  const [password,setPassword]=useState({currentPassword:"",newPassword:"",confirmPassword:""});
+  const [loading,setLoading]=useState(true);
+  const [saving,setSaving]=useState(false);
 
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setForm({
-        ...form,
-        profilePhoto: URL.createObjectURL(file),
-      });
-    }
-  };
+  useEffect(()=>{(async()=>{try{const r=await adminApi.get('/ops/me/profile');setProfile(r.data?.data||profile)}catch(e){Swal.fire('Could not load settings',e?.response?.data?.message||e.message,'error')}finally{setLoading(false)}})()},[]);
 
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const saveProfile=async(e)=>{e.preventDefault();setSaving(true);try{const r=await adminApi.patch('/ops/me/profile',{name:profile.name,email:profile.email,phone:profile.phone});const next=r.data?.data||profile;setProfile(next);const stored=JSON.parse(localStorage.getItem('adminData')||'{}');localStorage.setItem('adminData',JSON.stringify({...stored,...next}));await Swal.fire({icon:'success',title:'Profile updated',text:r.data?.message||'Your administrator profile has been updated.',confirmButtonColor:'#2E3192'})}catch(err){Swal.fire('Not saved',err?.response?.data?.message||err.message,'error')}finally{setSaving(false)}};
 
-  const handleSave = () => {
-    alert("Settings updated successfully!");
-    console.log(form);
-  };
+  const changePassword=async(e)=>{e.preventDefault();if(password.newPassword!==password.confirmPassword)return Swal.fire('Passwords do not match','Confirm the new password and try again.','warning');setSaving(true);try{const r=await adminApi.patch('/ops/me/password',{currentPassword:password.currentPassword,newPassword:password.newPassword});setPassword({currentPassword:'',newPassword:'',confirmPassword:''});await Swal.fire({icon:'success',title:'Password changed',text:r.data?.message||'Password changed successfully.',confirmButtonColor:'#2E3192'});localStorage.removeItem('adminToken');localStorage.removeItem('adminData');window.location.href='/admin/login'}catch(err){Swal.fire('Password not changed',err?.response?.data?.message||err.message,'error')}finally{setSaving(false)}};
 
-  return (
-    <div className="max-w-3xl mx-auto p-6">
-      <motion.h1
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-3xl font-bold text-[#2E3192] mb-8"
-      >
-        Admin Settings
-      </motion.h1>
+  if(loading)return <div className="rounded-3xl border bg-white p-12 text-center text-slate-500">Loading administrator settings…</div>;
+  const initials=(profile.name||profile.email||'A').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();
 
-      {/* Profile Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white shadow-lg rounded-2xl p-6 mb-8 border border-gray-100"
-      >
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">
-          Profile Information
-        </h2>
-
-        {/* Photo Upload */}
-        <div className="flex items-center gap-6 mb-6">
-          <div className="relative">
-            <img
-              src={form.profilePhoto}
-              alt="Profile"
-              className="w-24 h-24 rounded-full object-cover border-4 border-gray-200 shadow-sm"
-            />
-
-            <label
-              htmlFor="photoInput"
-              className="absolute bottom-0 right-0 bg-[#2E3192] p-2 rounded-full text-white cursor-pointer hover:bg-[#1F2370]"
-            >
-              <Camera size={18} />
-            </label>
-
-            <input
-              id="photoInput"
-              type="file"
-              className="hidden"
-              onChange={handlePhotoChange}
-            />
-          </div>
-
-          <div>
-            <p className="text-gray-700 font-medium">Profile Photo</p>
-            <p className="text-gray-500 text-sm">Upload a clear square image</p>
-          </div>
-        </div>
-
-        {/* Name */}
-        <div className="mb-4">
-          <label className="text-gray-600 font-medium flex gap-2 mb-1">
-            <User size={18} /> Full Name
-          </label>
-          <input
-            type="text"
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            className="w-full px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#2E3192]"
-          />
-        </div>
-
-        {/* Email */}
-        <div className="mb-4">
-          <label className="text-gray-600 font-medium flex gap-2 mb-1">
-            <Mail size={18} /> Email Address
-          </label>
-          <input
-            type="email"
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            className="w-full px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#2E3192]"
-          />
-        </div>
-
-        {/* Phone */}
-        <div className="mb-4">
-          <label className="text-gray-600 font-medium flex gap-2 mb-1">
-            <Phone size={18} /> Phone Number
-          </label>
-          <input
-            type="text"
-            name="phone"
-            value={form.phone}
-            onChange={handleChange}
-            className="w-full px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#2E3192]"
-          />
-        </div>
-      </motion.div>
-
-      {/* Password Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white shadow-lg rounded-2xl p-6 border border-gray-100"
-      >
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">
-          Change Password
-        </h2>
-
-        {/* Old Password */}
-        <div className="mb-4">
-          <label className="text-gray-600 font-medium flex gap-2 mb-1">
-            <Lock size={18} /> Old Password
-          </label>
-          <input
-            type="password"
-            name="oldPassword"
-            value={form.oldPassword}
-            onChange={handleChange}
-            className="w-full px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#2E3192]"
-          />
-        </div>
-
-        {/* New Password */}
-        <div className="mb-4">
-          <label className="text-gray-600 font-medium flex gap-2 mb-1">
-            <Lock size={18} /> New Password
-          </label>
-          <input
-            type="password"
-            name="newPassword"
-            value={form.newPassword}
-            onChange={handleChange}
-            className="w-full px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#2E3192]"
-          />
-        </div>
-
-        {/* Confirm Password */}
-        <div className="mb-4">
-          <label className="text-gray-600 font-medium flex gap-2 mb-1">
-            <Lock size={18} /> Confirm Password
-          </label>
-          <input
-            type="password"
-            name="confirmPassword"
-            value={form.confirmPassword}
-            onChange={handleChange}
-            className="w-full px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#2E3192]"
-          />
-        </div>
-      </motion.div>
-
-      {/* Save Button */}
-      <motion.button
-        whileTap={{ scale: 0.95 }}
-        onClick={handleSave}
-        className="mt-6 w-full bg-[#2E3192] text-white py-3 rounded-xl shadow-md font-semibold flex items-center justify-center gap-2 hover:bg-[#1F2370]"
-      >
-        <Save size={20} /> Save Changes
-      </motion.button>
+  return <div className="mx-auto max-w-4xl space-y-6">
+    <div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#2E3192]/60">Account Security</p><h1 className="mt-2 text-3xl font-black text-[#1c2454]">Admin Settings</h1><p className="mt-2 text-sm text-slate-500">Manage your administrator profile and sign-in password.</p></div>
+    <div className="grid gap-6 xl:grid-cols-[1.2fr_.8fr]">
+      <motion.form onSubmit={saveProfile} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} className="rounded-3xl border bg-white p-6 shadow-sm">
+        <div className="mb-6 flex items-center gap-4"><div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#2E3192] text-xl font-black text-white">{initials}</div><div><h2 className="text-xl font-black text-[#1c2454]">Profile</h2><p className="text-sm text-slate-500">Role: <span className="font-semibold capitalize">{String(profile.role||'admin').replace('_',' ')}</span></p></div></div>
+        <div className="grid gap-4 sm:grid-cols-2"><Field label="Full name" icon={User} value={profile.name||''} onChange={e=>setProfile({...profile,name:e.target.value})}/><Field disabled={!can("access.manage")} label="Email address" icon={Mail} type="email" required value={profile.email||''} onChange={e=>setProfile({...profile,email:e.target.value})}/><div className="sm:col-span-2"><Field label="Phone number" icon={Phone} value={profile.phone||''} onChange={e=>setProfile({...profile,phone:e.target.value})}/></div></div>
+        <button disabled={saving} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#2E3192] px-5 py-3 font-bold text-white disabled:opacity-60"><Save size={17}/>{saving?'Saving…':'Save Profile'}</button>
+      </motion.form>
+      <motion.form onSubmit={changePassword} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} className="rounded-3xl border bg-white p-6 shadow-sm">
+        <div className="mb-5 flex items-center gap-3"><div className="rounded-xl bg-emerald-50 p-2 text-emerald-700"><ShieldCheck size={20}/></div><div><h2 className="font-black text-[#1c2454]">Change Password</h2><p className="text-xs text-slate-500">You will be signed out after a successful change.</p></div></div>
+        <div className="space-y-4"><Field label="Current password" icon={Lock} type="password" required value={password.currentPassword} onChange={e=>setPassword({...password,currentPassword:e.target.value})}/><Field label="New password" icon={Lock} type="password" minLength={10} required value={password.newPassword} onChange={e=>setPassword({...password,newPassword:e.target.value})}/><Field label="Confirm new password" icon={Lock} type="password" minLength={10} required value={password.confirmPassword} onChange={e=>setPassword({...password,confirmPassword:e.target.value})}/></div>
+        <button disabled={saving} className="mt-6 w-full rounded-xl border border-[#2E3192] px-5 py-3 font-bold text-[#2E3192] transition hover:bg-[#2E3192] hover:text-white disabled:opacity-60">Update Password</button>
+      </motion.form>
     </div>
-  );
+  </div>;
 };
-
 export default AdminSettings;

@@ -20,6 +20,13 @@ const multerErrorHandler = (err, req, res, next) => {
         });
       }
 
+      if (field === "proofOfPayment") {
+        return res.status(400).json({
+          success: false,
+          message: "Proof of Payment is too large. Please upload a JPG, PNG or PDF under 5MB.",
+        });
+      }
+
       return res.status(400).json({
         success: false,
         message:

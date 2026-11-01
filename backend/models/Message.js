@@ -40,6 +40,8 @@ const messageSchema = new mongoose.Schema(
         "video",
         "audio",
         "document",
+        "pdf",
+        "file",
         "deleted", // ✅ VERY IMPORTANT (delete for everyone placeholder)
       ],
       default: "text",
@@ -57,6 +59,12 @@ const messageSchema = new mongoose.Schema(
     mediaUrl: {
       type: String,
       default: "",
+    },
+
+    mediaName: {
+      type: String,
+      default: "",
+      trim: true,
     },
 
     mediaThumbnail: {

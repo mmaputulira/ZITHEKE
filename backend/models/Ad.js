@@ -10,6 +10,7 @@ const adSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    reservedOrderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order", default: null },
     userId: {
       type: String,
       default: "",
@@ -286,7 +287,7 @@ geo: {
     =========================== */
     status: {
       type: String,
-      enum: ["Pending", "Approved", "Rejected", "Sold", "deleted"],
+      enum: ["Pending", "Approved", "Rejected", "Needs Editing", "Flagged", "Suspended", "Sold", "Archived", "deleted"],
       default: "Pending",
     },
     deletedAt: {
@@ -301,6 +302,19 @@ geo: {
       type: Boolean,
       default: false,
     },
+    boostSubscriptionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Subscription",
+      default: null,
+      index: true,
+    },
+    boostPaymentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Payment",
+      default: null,
+    },
+    boostStartDate: { type: Date, default: null },
+    boostEndDate: { type: Date, default: null },
     expiryDate: {
       type: Date,
       default: null,

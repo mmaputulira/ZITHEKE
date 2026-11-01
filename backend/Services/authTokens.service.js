@@ -1,3 +1,4 @@
+import { assertAccountAvailable, accountTypeOf, policyError } from "../utils/marketplacePolicy.js";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import Session from "../models/Session.js";
@@ -7,6 +8,9 @@ const hashToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
 
 export const createSessionAndTokens = async (user, req) => {
+  assertAccountAvailable(user);
+  const portal = req?.body?.accountType;
+  if (portal && portal !== accountTypeOf(user)) throw policyError(403, `Use the ${accountTypeOf(user)} login for this account.`);
   const refreshToken = jwt.sign(
     { uid: user.uid, type: "refresh" },
     env.JWT_REFRESH_SECRET,
@@ -47,6 +51,7 @@ export const createSessionAndTokens = async (user, req) => {
 };
 
 export const rotateRefreshToken = async (session, user) => {
+  assertAccountAvailable(user);
   const refreshToken = jwt.sign(
     { uid: user.uid, type: "refresh" },
     env.JWT_REFRESH_SECRET,

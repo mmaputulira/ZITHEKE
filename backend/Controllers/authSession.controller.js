@@ -1,3 +1,4 @@
+import { publicAccount } from "../utils/marketplacePolicy.js";
 import jwt from "jsonwebtoken";
 import Session from "../models/Session.js";
 import User from "../models/User.js";
@@ -46,6 +47,7 @@ export const refreshTokenHandler = async (req, res) => {
       token: accessToken,
       refreshToken: newRefresh,
       sessionId: session._id,
+      user: publicAccount(user),
     });
   } catch (err) {
     return res.status(401).json({

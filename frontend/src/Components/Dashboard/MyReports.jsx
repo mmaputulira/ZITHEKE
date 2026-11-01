@@ -200,7 +200,7 @@ const MyReports = () => {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search title or reason�"
+              placeholder="Search title or reason…"
               className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#2E3192]/30"
             />
           </div>

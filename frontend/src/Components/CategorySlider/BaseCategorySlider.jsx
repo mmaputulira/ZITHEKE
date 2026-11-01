@@ -24,14 +24,41 @@ const BaseCategorySlider = ({ categoryTitle, category }) => {
   const BASE_URL = "/api";
   const mainSwiperRef = useRef(null);
   const imageSwiperRefs = useRef({});
+  const sectionRef = useRef(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
 
   useEffect(() => {
+    const node = sectionRef.current;
+    if (!node || shouldLoad) return undefined;
+
+    if (typeof IntersectionObserver === "undefined") {
+      setShouldLoad(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldLoad(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "500px 0px" }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [shouldLoad]);
+
+  useEffect(() => {
+    if (!shouldLoad) return undefined;
+
     const fetchAds = async () => {
       try {
         const res = await axios.get(
-          `${BASE_URL}/ads${
-            category ? `?category=${encodeURIComponent(category)}` : ""
-          }`
+          `${BASE_URL}/ads?${
+            category ? `category=${encodeURIComponent(category)}&` : ""
+          }limit=12&sort=newest`
         );
 
         const data = Array.isArray(res.data) ? res.data : res.data?.ads || [];
@@ -45,7 +72,8 @@ const BaseCategorySlider = ({ categoryTitle, category }) => {
       }
     };
     fetchAds();
-  }, [category]);
+    return undefined;
+  }, [category, shouldLoad]);
 
   /* -----------------------------
      ✅ Visual System (CSS Vars)
@@ -112,6 +140,7 @@ const BaseCategorySlider = ({ categoryTitle, category }) => {
 
   return (
     <section
+      ref={sectionRef}
       style={themeVars}
       className="w-full px-6 py-12 font-[Poppins] relative overflow-hidden"
     >

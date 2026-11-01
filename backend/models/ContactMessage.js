@@ -25,8 +25,10 @@ const contactMessageSchema = new mongoose.Schema(
     },
     isRead: {
       type: Boolean,
-      default: false, // Admin inbox ke liye
+      default: false,
     },
+    trashedAt: { type: Date, default: null, index: true },
+    purgeAfter: { type: Date, default: null, index: true },
   },
   { timestamps: true }
 );

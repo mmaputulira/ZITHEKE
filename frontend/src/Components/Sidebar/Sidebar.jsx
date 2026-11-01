@@ -17,6 +17,11 @@ import {
   Home,
   Flag,
   Settings,
+  CreditCard,
+  HandCoins,
+  BellRing,
+  Users,
+  Rocket,
 } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
@@ -78,11 +83,17 @@ const Sidebar = () => {
 
   const menus = [
     { name: "Home", icon: Home, path: "/" },
-    { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
+    { name: "Seller Dashboard", icon: LayoutDashboard, path: "/dashboard" },
     { name: "My Ads", icon: FolderOpen, dropdown: true },
     { name: "Chats", icon: MessageCircle, path: "/chats" },
-    { name: "Favorites", icon: Heart, path: "/dashboard/favorites" },
-    { name: "My Reports", icon: Flag, path: "/dashboard/myReports" },
+    { name: "Sales Orders", icon: HandCoins, path: "/dashboard/sales" },
+    { name: "Offers", icon: HandCoins, path: "/dashboard/offers" },
+
+    { name: "Notifications", icon: BellRing, path: "/dashboard/notifications" },
+
+    { name: "Boost Performance", icon: Rocket, path: "/dashboard/boost-performance" },
+    { name: "My Payments", icon: CreditCard, path: "/dashboard/payments" },
+    { name: "My Reports", icon: Flag, path: "/dashboard/myreports" },
     { name: "Profile", icon: User, path: "/dashboard/profile" },
     { name: "Settings", icon: Settings, path: "/dashboard/settings" },
   ];

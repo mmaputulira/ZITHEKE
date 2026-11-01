@@ -55,9 +55,11 @@ export const useChatSocket = ({
     socket.off("message:new");
     socket.off("typing:status");
     socket.off("message:deliver-batch");
+    socket.off("message:batch-deliver");
     socket.off("message:deleted-everyone");
     socket.off("message:delivered");
     socket.off("message:read");
+    socket.off("message:update-seen");
 
     /* =====================================================
        🔁 DEDUPE HELPER (_id OR clientTempId)
@@ -244,6 +246,19 @@ export const useChatSocket = ({
       }
     });
 
+    // Compatibility with the previous server event name during rolling deployment.
+    socket.on("message:update-seen", (payload = {}) => {
+      if (!selectedChat?.conversationId) return;
+      const readAt = payload.readAt || new Date().toISOString();
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.conversationId === selectedChat.conversationId && m.senderId === userId
+            ? { ...m, isRead: true, readAt }
+            : m
+        )
+      );
+    });
+
     /* =====================================================
        ✍️ TYPING INDICATOR (incoming)
     ===================================================== */
@@ -259,16 +274,14 @@ export const useChatSocket = ({
     /* =====================================================
        📨 OFFLINE MESSAGE DELIVERY (DEDUPED)
     ===================================================== */
-    socket.on("message:deliver-batch", (batch) => {
+    const handleOfflineBatch = (batch) => {
       if (!Array.isArray(batch) || !batch.length) return;
 
       setMessages((prev) => {
         const merged = [...prev];
         for (const msg of batch) {
-          // replace temp if any, else add if not dup
           const replaced = replaceTempIfNeeded(merged, msg);
           if (replaced !== merged) {
-            // if replaced, update merged reference
             merged.length = 0;
             merged.push(...replaced);
             continue;
@@ -277,7 +290,10 @@ export const useChatSocket = ({
         }
         return merged;
       });
-    });
+    };
+
+    socket.on("message:deliver-batch", handleOfflineBatch);
+    socket.on("message:batch-deliver", handleOfflineBatch);
 
     /* =====================================================
        🧹 CLEANUP (DO NOT DISCONNECT SOCKET)
@@ -292,9 +308,11 @@ export const useChatSocket = ({
       socket.off("message:new");
       socket.off("typing:status");
       socket.off("message:deliver-batch");
+      socket.off("message:batch-deliver");
       socket.off("message:deleted-everyone");
       socket.off("message:delivered");
       socket.off("message:read");
+      socket.off("message:update-seen");
 
       // clear timers
       if (typingEmitTimerRef.current) {
@@ -333,7 +351,7 @@ export const useChatSocket = ({
 
     // throttle: emit at most once per ~350ms
     if (!typingEmitTimerRef.current) {
-      socket.emit("typing:status", payload);
+      socket.emit("typing:update", payload);
 
       typingEmitTimerRef.current = setTimeout(() => {
         typingEmitTimerRef.current = null;
@@ -346,7 +364,7 @@ export const useChatSocket = ({
     }
     if (isTyping) {
       typingStopTimerRef.current = setTimeout(() => {
-        socket.emit("typing:status", {
+        socket.emit("typing:update", {
           ...payload,
           isTyping: false,
         });

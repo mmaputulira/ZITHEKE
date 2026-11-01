@@ -1,8 +1,8 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../../components/Sidebar/Sidebar.jsx";
+import Sidebar from "../../Components/Sidebar/Sidebar.jsx";
 import { Heart, MapPin, Trash2, FolderOpen } from "lucide-react";
-import api from "../../api/axios"; // âœ… interceptor
+import api from "../../api/axios"; // ✅ interceptor
 import { useAuth } from "../../context/AuthContext";
 import {
   getCardImageOrFallback,
@@ -10,6 +10,7 @@ import {
   handleImageFallback,
 } from "../../utils/imageVariants";
 import { motion } from "framer-motion";
+import Swal from "sweetalert2";
 
 const Favorites = () => {
   const { user } = useAuth();
@@ -17,7 +18,7 @@ const Favorites = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  /* âœ… Fetch Favorites */
+  /* ✅ Fetch Favorites */
   useEffect(() => {
     const fetchFavorites = async () => {
       if (!user?.uid) return;
@@ -27,7 +28,7 @@ const Favorites = () => {
         const res = await api.get(`/favorites/${user.uid}`);
         setFavorites(res.data || []);
       } catch (error) {
-        console.error("âŒ Error fetching favorites:", error);
+        console.error("❌ Error fetching favorites:", error);
       } finally {
         setLoading(false);
       }
@@ -36,10 +37,13 @@ const Favorites = () => {
     fetchFavorites();
   }, [user?.uid]);
 
-  /* âœ… Remove Favorite */
+  /* ✅ Remove Favorite */
   const removeFavorite = async (adId) => {
     try {
-      if (!user?.uid) return alert("Please login");
+      if (!user?.uid) {
+        await Swal.fire({ icon: "info", title: "Sign in required", text: "Please sign in to manage your saved items.", confirmButtonColor: "#2E3192" });
+        return;
+      }
 
       const res = await api.put("/favorites/toggle", {
         userId: user.uid,
@@ -51,15 +55,15 @@ const Favorites = () => {
         setFavorites((prev) => prev.filter((f) => f._id !== adId));
       }
     } catch (error) {
-      console.error("âŒ Error removing favorite:", error);
+      console.error("❌ Error removing favorite:", error);
     }
   };
 
-  /* âœ… Loading */
+  /* ✅ Loading */
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen text-[#2E3192] font-semibold text-xl bg-gradient-to-br from-[#E9EDFF] via-[#F2F4FF] to-[#ffffff] animate-pulse">
-        Loading favorites...
+        Loading saved items...
       </div>
     );
   }
@@ -91,10 +95,10 @@ const Favorites = () => {
                 <span className="w-9 h-9 rounded-2xl bg-[#E9EDFF] flex items-center justify-center">
                   <Heart className="w-5 h-5 text-[#2E3192]" />
                 </span>
-                My Favorites
+                Saved Items
               </h1>
               <p className="text-gray-600 text-sm mt-1">
-                All the listings youâ€™ve saved in one place â¤ï¸
+                Your shortlist of listings worth coming back to.
               </p>
             </div>
 
@@ -102,7 +106,7 @@ const Favorites = () => {
               <div className="flex items-center gap-4 bg-white/70 backdrop-blur-md border rounded-2xl px-4 py-2 shadow-sm">
                 <div>
                   <p className="text-[11px] text-gray-400 uppercase">
-                    Total Favorites
+                    Saved Items
                   </p>
                   <p className="text-lg font-semibold text-[#1F2370]">
                     {totalFavorites}
@@ -126,7 +130,7 @@ const Favorites = () => {
         {favorites.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <FolderOpen className="w-12 h-12 text-[#2E3192] mb-3" />
-            <h2 className="text-xl font-semibold">No Favorites Yet</h2>
+            <h2 className="text-xl font-semibold">No Saved Items Yet</h2>
             <p className="text-gray-500 text-sm mt-2">
               Save ads to see them here
             </p>

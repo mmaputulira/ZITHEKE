@@ -19,16 +19,27 @@ const KitchenwarePromo = () => {
   const navigate = useNavigate();
   const [activeIndex, setActiveIndex] = useState(0);
   const [products, setProducts] = useState([]);
+  const [feedType, setFeedType] = useState("boosted");
 
   useEffect(() => {
     let mounted = true;
 
     const fetchPromoAds = async () => {
       try {
-        const res = await fetch("/api/ads?limit=80&page=1");
-        const data = await res.json();
+        let res = await fetch("/api/ads/promo?limit=10");
+        let data = await res.json();
+        let ads = Array.isArray(data?.ads) ? data.ads : [];
+
+        if (!ads.length) {
+          res = await fetch("/api/ads?sort=popular&limit=10&page=1");
+          data = await res.json();
+          ads = Array.isArray(data?.ads) ? data.ads : [];
+          if (mounted) setFeedType("popular");
+        } else if (mounted) {
+          setFeedType("boosted");
+        }
+
         if (mounted) {
-          const ads = Array.isArray(data?.ads) ? data.ads : [];
           const selected = [];
           const seenCategories = new Set();
           const selectedIds = new Set();
@@ -115,31 +126,32 @@ const KitchenwarePromo = () => {
           viewport={{ once: true }}
         >
           <motion.h1 variants={item} className="text-4xl md:text-5xl font-bold leading-tight">
-            <span className="text-[#F9B233]">Trending Deals</span> on Zitheke
+            <span className="text-[#F9B233]">{feedType === "boosted" ? "Boosted Listings" : "Popular Listings"}</span> on Zitheke
           </motion.h1>
 
           <motion.p variants={item} className="mt-5 text-lg text-[#E9EDFF] max-w-xl">
-            Explore trending promoted listings from multiple categories, trusted
-            sellers, and top-value deals across Malawi.
+            {feedType === "boosted"
+              ? "Discover adverts sellers have chosen to promote across Zitheke."
+              : "Discover listings attracting attention from buyers across Malawi."}
           </motion.p>
 
           <motion.ul variants={container} className="mt-7 space-y-4">
             <motion.li variants={item} className="flex gap-3">
               <ShieldCheck className="w-5 h-5 text-[#F9B233] mt-1" />
               <span className="text-[#E9EDFF]">
-                Verified local sellers with quality listings
+                Marketplace listings from active Zitheke sellers
               </span>
             </motion.li>
             <motion.li variants={item} className="flex gap-3">
               <Truck className="w-5 h-5 text-[#F9B233] mt-1" />
               <span className="text-[#E9EDFF]">
-                Fast local pickup and delivery options
+                Compare listings and contact sellers directly
               </span>
             </motion.li>
             <motion.li variants={item} className="flex gap-3">
               <Star className="w-5 h-5 text-[#F9B233] mt-1" />
               <span className="text-[#E9EDFF]">
-                Fresh boosted deals updated regularly
+                Fresh marketplace activity updated regularly
               </span>
             </motion.li>
           </motion.ul>

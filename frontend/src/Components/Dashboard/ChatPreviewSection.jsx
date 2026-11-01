@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
   MessageSquare,
@@ -12,7 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { getAvatarSrc, handleAvatarFallback } from "../../utils/avatar.js";
 
-/* ðŸ”¹ Time Ago Utility */
+/* 🔹 Time Ago Utility */
 const timeAgo = (date) => {
   if (!date) return "";
   const diff = Math.floor((Date.now() - new Date(date)) / 1000);

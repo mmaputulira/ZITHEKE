@@ -1,16 +1,20 @@
+import { assertMerchantUid } from "../marketplaceIdentity.service.js";
 import mongoose from "mongoose";
 import crypto from "crypto";
 import User from "../../models/User.js";
 import Subscription from "../../models/Subscription.js";
 import Payment from "../../models/Payment.js";
 import PaymentEvent from "../../models/PaymentEvent.js";
+import Ad from "../../models/Ad.js";
 import { PAYMENT_STATUSES } from "../../constants/paymentStatuses.js";
 import { PAYMENT_VERIFICATION_STATUSES } from "../../constants/paymentVerificationStatuses.js";
 import { PAYMENT_GATEWAYS } from "../../constants/paymentGateways.js";
 import { SUBSCRIPTION_STATUSES } from "../../constants/subscriptionStatuses.js";
-import { ALLOWED_PREMIUM_PLAN_AMOUNTS } from "../../constants/membershipPlans.js";
 import AirtelGateway from "./gateways/airtel.gateway.js";
+import NepgGateway from "./gateways/nepg.gateway.js";
 import MastercardGateway from "./gateways/mastercard.gateway.js";
+import BankGateway from "./gateways/bank.gateway.js";
+import { createPaymentReference, createReceiptReference } from "../../utils/paymentReferences.js";
 import subscriptionService from "./subscription.service.js";
 
 const createError = (statusCode, message) => {
@@ -36,7 +40,9 @@ const PAYMENT_REUSE_WINDOW_MS = 3 * 60 * 1000;
 
 const gateways = {
   [PAYMENT_GATEWAYS.AIRTEL_MONEY]: new AirtelGateway(),
+  [PAYMENT_GATEWAYS.NEPG]: new NepgGateway(),
   [PAYMENT_GATEWAYS.MASTERCARD]: new MastercardGateway(),
+  [PAYMENT_GATEWAYS.BANK]: new BankGateway(),
 };
 
 const resolveGateway = (gatewayCode) => {
@@ -65,7 +71,8 @@ const generateMerchantTransactionId = () =>
 const isReusableOpenPayment = (payment) => {
   const createdAt = new Date(payment?.createdAt || 0).getTime();
   if (!createdAt) return false;
-  return Date.now() - createdAt < PAYMENT_REUSE_WINDOW_MS;
+  const reuseWindow = payment?.gateway === PAYMENT_GATEWAYS.BANK ? 48 * 60 * 60 * 1000 : PAYMENT_REUSE_WINDOW_MS;
+  return Date.now() - createdAt < reuseWindow;
 };
 
 const isExplicitGatewayCustomerFailure = (error) => {
@@ -105,14 +112,14 @@ const getRetryableInitiationState = (error) => {
     return {
       paymentStatus: PAYMENT_STATUSES.FAILED,
       verificationStatus: PAYMENT_VERIFICATION_STATUSES.FAILED,
-      eventType: "airtel_initiation_failed",
+      eventType: "payment_initiation_failed",
     };
   }
 
   return {
     paymentStatus: PAYMENT_STATUSES.PENDING_VERIFICATION,
     verificationStatus: PAYMENT_VERIFICATION_STATUSES.PENDING,
-    eventType: "airtel_initiation_retryable_error",
+    eventType: "payment_initiation_retryable_error",
   };
 };
 
@@ -202,8 +209,40 @@ const buildReusedInitiationResponse = ({ adapter, payment, gateway }) => {
     };
   }
 
+  if (gateway === PAYMENT_GATEWAYS.NEPG) {
+    const formUrl =
+      payment.rawResponsePayload?.orderRegistration?.formUrl ||
+      payment.rawResponsePayload?.formUrl ||
+      "";
+    if (!formUrl || !payment.gatewayOrderId) return null;
+
+    return {
+      ...baseResponse,
+      gatewayOrderId: payment.gatewayOrderId,
+      paymentReference: payment.paymentReference || "",
+      formUrl,
+      redirectUrl: formUrl,
+      customerMessage:
+        "An earlier NEPG order is still pending. Reopening the secure payment page.",
+    };
+  }
+
+  if (gateway === PAYMENT_GATEWAYS.BANK) {
+    return {
+      ...baseResponse,
+      paymentReference: payment.paymentReference || "",
+      receiptReference: payment.receiptReference || "",
+      amount: Number(payment.amount || 0),
+      currency: payment.currency || "MWK",
+      bankDetails: payment.rawResponsePayload?.bankInstructions || {},
+      customerMessage: "This National Bank transfer is still awaiting Proof of Payment or verification.",
+    };
+  }
+
   return {
     ...baseResponse,
+    paymentReference: payment.paymentReference || "",
+    receiptReference: payment.receiptReference || "",
     customerMessage:
       "An earlier payment request is still pending. Please check your phone or wait for verification. No new Airtel prompt was sent.",
   };
@@ -237,6 +276,7 @@ const createPaymentIntent = async ({
   idempotencyKey,
 }) => {
   assertObjectId(subscriptionId, "subscriptionId");
+  await assertMerchantUid(userUid);
 
   const user = await resolveUserByUid(userUid);
   const subscription = await Subscription.findOne({
@@ -252,13 +292,22 @@ const createPaymentIntent = async ({
     throw createError(409, "Subscription plan is inactive");
   }
 
-  const planPrice = Number(subscription.planId.price || 0);
-  if (!ALLOWED_PREMIUM_PLAN_AMOUNTS.includes(planPrice)) {
-    throw createError(
-      409,
-      `Plan price must be one of: ${ALLOWED_PREMIUM_PLAN_AMOUNTS.join(", ")} MWK`
-    );
+  if (subscription.scope === "ad_boost") {
+    if (!subscription.adId) {
+      throw createError(409, "Boost payment is not linked to an advert");
+    }
+    const ownedAd = await Ad.findOne({
+      _id: subscription.adId,
+      ownerUid: userUid,
+      status: "Approved",
+    }).select("_id ownerUid status");
+    if (!ownedAd) {
+      throw createError(409, "The selected advert must be approved, available, and owned by this seller");
+    }
   }
+
+  const planPrice = Number(subscription.planId.price || 0);
+  if (!Number.isFinite(planPrice) || planPrice <= 0) throw createError(409, "Selected plan price is invalid");
 
   if (subscription.status !== SUBSCRIPTION_STATUSES.PENDING) {
     throw createError(
@@ -276,7 +325,7 @@ const createPaymentIntent = async ({
       idempotencyKey,
     }).populate({
       path: "subscriptionId",
-      populate: { path: "planId" },
+      populate: [{ path: "planId" }, { path: "adId" }],
     });
 
     if (existingByIdempotency) {
@@ -310,11 +359,13 @@ const createPaymentIntent = async ({
 
   const existingOpenPayment = await Payment.findOne({
     subscriptionId: subscription._id,
+    adId: subscription.adId || null,
+    purchaseType: subscription.scope || "ad_boost",
     gateway,
     status: { $in: OPEN_PAYMENT_STATUSES },
   }).populate({
     path: "subscriptionId",
-    populate: { path: "planId" },
+    populate: [{ path: "planId" }, { path: "adId" }],
   });
 
   if (existingOpenPayment) {
@@ -346,12 +397,16 @@ const createPaymentIntent = async ({
   const payment = await Payment.create({
     userId: user._id,
     subscriptionId: subscription._id,
+    adId: subscription.adId || null,
+    purchaseType: subscription.scope || "ad_boost",
     gateway,
     paymentMethod,
     payerMsisdn: "",
     amount: subscription.planId.price,
     currency: subscription.planId.currency || "MWK",
     merchantTransactionId: generateMerchantTransactionId(),
+    paymentReference: createPaymentReference(subscription.planId.slug),
+    receiptReference: createReceiptReference(subscription.planId.slug),
     status: PAYMENT_STATUSES.CREATED,
     verificationStatus: PAYMENT_VERIFICATION_STATUSES.UNVERIFIED,
     idempotencyKey: idempotencyKey || crypto.randomUUID(),
@@ -369,6 +424,8 @@ const createPaymentIntent = async ({
     normalizedPayload: {
       gateway,
       paymentMethod,
+      adId: subscription.adId ? String(subscription.adId) : null,
+      purchaseType: subscription.scope || "ad_boost",
       status: PAYMENT_STATUSES.CREATED,
     },
   });
@@ -383,7 +440,7 @@ const createPaymentIntent = async ({
       planName: subscription.planId.name || "",
       planPrice,
       paymentAmountStored: Number(payment.amount),
-      airtelPayloadAmount: Number(payment.amount),
+      gatewayPayloadAmount: Number(payment.amount),
       currency: payment.currency || subscription.planId.currency || "MWK",
     });
 
@@ -424,7 +481,7 @@ const createPaymentIntent = async ({
 
     await PaymentEvent.create({
       paymentId: payment._id,
-      eventType: "airtel_initiated",
+      eventType: `${gateway}_initiated`,
       source: "gateway",
       rawPayload: initiation.rawResponsePayload,
       normalizedPayload: initiation.normalizedResponse,
@@ -432,7 +489,7 @@ const createPaymentIntent = async ({
 
     const hydratedPayment = await Payment.findById(payment._id).populate({
       path: "subscriptionId",
-      populate: { path: "planId" },
+      populate: [{ path: "planId" }, { path: "adId" }],
     });
 
     return {
@@ -452,7 +509,7 @@ const createPaymentIntent = async ({
     payment.payerMsisdn = payment.payerMsisdn || "";
     payment.status = retryableState.paymentStatus;
     payment.verificationStatus = retryableState.verificationStatus;
-    payment.failureReason = error?.message || "Airtel initiation failed";
+    payment.failureReason = error?.message || "Payment initiation failed";
     payment.retryCount = Number(payment.retryCount || 0) + 1;
     payment.gatewayCode = error?.gatewayCode || error?.code || payment.gatewayCode || "";
     payment.gatewayMessage =
@@ -464,7 +521,6 @@ const createPaymentIntent = async ({
     }
     if (error?.rawResponse) {
       payment.rawResponsePayload = {
-        oauth: error?.oauthResponse || payment.rawResponsePayload?.oauth || null,
         collection: error.rawResponse,
       };
     }
@@ -476,7 +532,7 @@ const createPaymentIntent = async ({
       source: "gateway",
       rawPayload: error?.rawResponse || null,
       normalizedPayload: {
-        message: error?.message || "Airtel initiation failed",
+        message: error?.message || "Payment initiation failed",
         status: retryableState.paymentStatus,
         verificationStatus: retryableState.verificationStatus,
         gatewayCode: payment.gatewayCode || "",
@@ -497,7 +553,7 @@ const getPaymentByIdForUser = async ({ userUid, paymentId }) => {
     userId: user._id,
   }).populate({
     path: "subscriptionId",
-    populate: { path: "planId" },
+    populate: [{ path: "planId" }, { path: "adId" }],
   });
 
   if (!payment) {
@@ -513,7 +569,7 @@ const listPaymentsForUser = async (userUid) => {
   return await Payment.find({ userId: user._id })
     .populate({
       path: "subscriptionId",
-      populate: { path: "planId" },
+      populate: [{ path: "planId" }, { path: "adId" }],
     })
     .sort({ createdAt: -1 });
 };

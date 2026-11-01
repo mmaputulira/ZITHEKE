@@ -1,0 +1,30 @@
+ZITHEKE MARKETPLACE — FINAL AUDITED SOURCE RELEASE
+Release date: 2026-09-13
+
+Included:
+- backend source and payment services
+- frontend marketplace
+- admin operations application
+- Airtel Money + National Bank POP payment flows
+- MPGS integration groundwork
+- seller subscriptions + advert-specific boosts
+- immersive buyer/seller features
+- reconciliation/admin operations functionality
+- September 2026 marketplace/security/search/category/runtime audit fixes
+- audit report, security notes, validation report and UAT checklist
+- Restock Tech powered-by branding already present in the audited baseline
+
+Intentionally excluded:
+- node_modules
+- build/dist output
+- Git metadata
+- runtime uploads
+- live .env files
+- service-account JSON/private keys
+- private POP evidence
+- npm cache/log artifacts
+
+Release status:
+- Source package: COMPLETE
+- UAT/staging: READY
+- Production: CONDITIONAL on host builds, dependency review and UAT sign-off

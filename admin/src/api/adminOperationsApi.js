@@ -1,0 +1,18 @@
+import adminApi from "./adminApi.js";
+
+export const getOpsDashboard = () => adminApi.get("/ops/dashboard").then(r=>r.data?.data || {});
+export const getReconciliation = (params={}) => adminApi.get("/ops/reconciliation",{params}).then(r=>r.data);
+export const setUserLifecycle = (id,status) => adminApi.patch(`/ops/users/${id}/status`,{status}).then(r=>r.data);
+export const setSellerVerified = (id,verified) => adminApi.patch(`/ops/users/${id}/verified`,{verified}).then(r=>r.data);
+export const getSeller360 = (id) => adminApi.get(`/ops/users/${id}/360`).then(r=>r.data?.data);
+export const bulkModerateAds = (ids,action,reason="") => adminApi.post("/ops/ads/bulk",{ids,action,reason}).then(r=>r.data);
+export const getRiskFlags = () => adminApi.get("/ops/risk-flags").then(r=>r.data?.data || []);
+export const getAuditLogs = (params={}) => adminApi.get("/ops/audit-log",{params}).then(r=>r.data?.data || []);
+export const getSystemHealth = () => adminApi.get("/ops/system-health").then(r=>r.data?.data || {});
+export const recoverPayment = (paymentId,reason) => adminApi.post(`/ops/payments/${paymentId}/recover`,{reason}).then(r=>r.data);
+export const getNotifications = () => adminApi.get("/ops/notifications").then(r=>r.data?.data || []);
+export const createNotification = (payload) => adminApi.post("/ops/notifications",payload).then(r=>r.data?.data);
+export const toggleNotification = (id,isActive) => adminApi.patch(`/ops/notifications/${id}`,{isActive}).then(r=>r.data?.data);
+export const getAdminAccess = () => adminApi.get("/ops/admin-access").then(r=>r.data?.data || []);
+export const updateAdminRole = (id,payload) => adminApi.patch(`/ops/admin-access/${id}/role`,typeof payload==='string'?{role:payload}:payload).then(r=>r.data);
+export const getSupportCentre = () => adminApi.get("/ops/support").then(r=>r.data?.data || {messages:[],reports:[]});

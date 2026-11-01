@@ -43,6 +43,12 @@ const ConversationSchema = new mongoose.Schema(
       default: "",
     },
 
+    lastMessageType: {
+      type: String,
+      enum: ["text", "image", "video", "audio", "document", "pdf", "file", "deleted"],
+      default: "text",
+    },
+
     /* =====================================
        🔔 UNREAD COUNTS (MAP = SAFEST)
     ===================================== */
@@ -59,6 +65,8 @@ const ConversationSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    trashedAt: { type: Date, default: null, index: true },
+    purgeAfter: { type: Date, default: null, index: true },
   },
   {
     timestamps: true, // createdAt + updatedAt

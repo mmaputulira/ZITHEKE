@@ -24,14 +24,14 @@ const VerifyEmail = () => {
         const data = await res.json();
 
         if (!res.ok) {
-          throw new Error(data?.message || "Email verification failed.");
+          throw new Error(data?.message || "We couldn't confirm your email address.");
         }
 
         setStatus("success");
         setMessage(data?.message || "Email verified successfully.");
       } catch (err) {
         setStatus("error");
-        setMessage(err?.message || "Email verification failed.");
+        setMessage(err?.message || "We couldn't confirm your email address.");
       }
     };
 

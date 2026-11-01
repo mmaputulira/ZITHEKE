@@ -33,9 +33,12 @@ import {
   FileText,
   Clock,
   Layers,
+  HandCoins,
+  BellRing,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import Swal from "sweetalert2";
+import { promptCurrencyAmount } from "../../utils/promptCurrencyAmount";
 
 const normalizePhone = (number) => {
   if (number === null || number === undefined) return "";
@@ -89,6 +92,7 @@ const ProductDetails = () => {
   const [showReportModal, setShowReportModal] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareToast, setShareToast] = useState(false);
+  const [priceAlertActive, setPriceAlertActive] = useState(false);
   const [callbackForm, setCallbackForm] = useState({
     name: "",
     phone: "",
@@ -215,8 +219,16 @@ const ProductDetails = () => {
     fetchRelated();
   }, [ad?._id, ad?.category]);
 
+  useEffect(() => {
+    if (!user?.uid || !ad?._id) { setIsFav(false); return; }
+    api.get(`/favorites/${user.uid}`)
+      .then((res) => setIsFav((res.data || []).some((item) => String(item?._id) === String(ad._id))))
+      .catch(() => setIsFav(false));
+  }, [user?.uid, ad?._id]);
+
   /* Favorites */
   const handleAddToFav = async () => {
+    if(!requireBuyerAction())return;
     if (!user) {
       Swal.fire("Login required", "Please login to manage favorites", "info");
       return;
@@ -232,7 +244,7 @@ const ProductDetails = () => {
 
       Swal.fire({
         icon: res.data.status ? "success" : "info",
-        title: res.data.status ? "Added to Favorites ❤️" : "Removed 💔",
+        title: res.data.status ? "Saved ❤️" : "Removed 💔",
         showConfirmButton: false,
         timer: 1500,
       });
@@ -250,8 +262,61 @@ const ProductDetails = () => {
     }
   };
 
+  useEffect(() => {
+    if (!user || user.accountType !== "buyer" || !ad?._id || user.uid === ad.ownerUid) return;
+    api.get("/marketplace/price-alerts")
+      .then((res) => setPriceAlertActive((res.data || []).some((row) => String(row.adId?._id) === String(ad._id))))
+      .catch(() => {});
+  }, [user?.uid, ad?._id]);
+
+  const requireBuyerAction = () => {
+    if(!user) { navigate("/buyer/login", {state:{returnTo:"/ad/" + ad?._id}}); return false; }
+    if(user.accountType !== "buyer") { Swal.fire("Buyer account required", "Sign out and use a buyer account to engage with another merchant.", "info"); return false; }
+    return true;
+  };
+  const handleBuy = async () => {
+    if(!requireBuyerAction())return;
+    const answer = await Swal.fire({title:"Send a purchase request?",text:"The merchant will confirm availability. Arrange payment and collection directly with the merchant. Zitheke does not collect product payment here.",showCancelButton:true,confirmButtonText:"Send request",confirmButtonColor:"#2E3192"});
+    if(!answer.isConfirmed)return;
+    try { await api.post("/orders",{adId:ad._id}); navigate("/buyer/account/purchases"); }
+    catch(error) { Swal.fire("Unable to request purchase",error.response?.data?.message || "Please try again.","error"); }
+  };
+  const handleCart = async () => {
+    if(!requireBuyerAction())return;
+    try { await api.post("/cart/items",{adId:ad._id}); Swal.fire({title:"Added to cart",icon:"success",timer:1600,showConfirmButton:false}); }
+    catch(error) { Swal.fire("Unable to add item",error.response?.data?.message || "Please try again.","error"); }
+  };
+  const handleMakeOffer = async () => {
+    if(!requireBuyerAction() || !ad.negotiable)return;
+    if (!user) return Swal.fire("Login required", "Please login to make an offer", "info");
+    if (user.uid === ad?.ownerUid) return Swal.fire("Your advert", "You cannot make an offer on your own advert.", "info");
+    const amount = await promptCurrencyAmount({
+      title: "Make an offer",
+      label: `Your offer for ${ad?.title || "this listing"} (MWK)`,
+      placeholder: String(Math.max(1, Number(ad.price || 0))),
+      confirmButtonText: "Send offer",
+    });
+    if (!amount) return;
+    try {
+      await api.post("/marketplace/offers", { adId: ad._id, amount });
+      Swal.fire({ icon: "success", title: "Offer sent", text: "The seller can accept, decline or counter your offer.", confirmButtonColor: "#2E3192" });
+    } catch (err) { Swal.fire("Offer not sent", err?.response?.data?.message || "Please try again.", "error"); }
+  };
+
+  const handlePriceAlert = async () => {
+    if(!requireBuyerAction())return;
+    if (!user) return Swal.fire("Login required", "Please login to create a price alert", "info");
+    if (user.uid === ad?.ownerUid) return Swal.fire("Your advert", "Price alerts are intended for buyers.", "info");
+    try {
+      const res = await api.post("/marketplace/price-alerts/toggle", { adId: ad._id });
+      setPriceAlertActive(Boolean(res.data?.active));
+      Swal.fire({ toast: true, position: "top-end", timer: 1800, showConfirmButton: false, icon: "success", title: res.data?.active ? "Price alert switched on" : "Price alert switched off" });
+    } catch (err) { Swal.fire("Unable to update alert", err?.response?.data?.message || "Please try again.", "error"); }
+  };
+
   /* Start Chat */
   const handleStartChat = async () => {
+    if(!requireBuyerAction())return;
     if (!user) {
       Swal.fire("Login required", "Please login to start chat", "info");
       return;
@@ -513,6 +578,7 @@ const ProductDetails = () => {
   const isWhatsappAvailable = Boolean(sellerWhatsappNumber);
 
   const openWhatsAppChat = () => {
+    if(!requireBuyerAction())return;
     if (!user) {
       Swal.fire("Login required", "Please login to start WhatsApp chat", "info");
       return;
@@ -751,12 +817,12 @@ const ProductDetails = () => {
               </h1>
 
               {/* Optional Featured or Verified Badge */}
-              {ad.isFeatured && (
+              {ad.featured && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 text-sm font-semibold bg-[#2E3192]/10 text-[#2E3192] rounded-full shadow-sm">
                   ⭐ Featured
                 </span>
               )}
-              {ad.isVerified && !ad.isFeatured && (
+              {sellerStats?.isVerifiedSeller && !ad.featured && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 text-sm font-semibold bg-green-50 text-green-700 border border-green-200 rounded-full shadow-sm">
                   ✅ Verified
                 </span>
@@ -812,13 +878,23 @@ const ProductDetails = () => {
                 />
               </motion.div>
 
-              {isFav ? "Added to Favorites" : "Add to Favorites"}
+              {isFav ? "Saved" : "Save Item"}
 
               {/* Tooltip hint */}
               <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[11px] text-gray-500 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                {isFav ? "Remove from favorites" : "Save this ad"}
+                {isFav ? "Remove from saved items" : "Save this ad"}
               </span>
             </motion.button>
+
+            {(!user || user.accountType === "buyer") && user?.uid !== ad?.ownerUid && (<>
+              {ad.canPurchase && <><button onClick={handleBuy} className="rounded-full bg-[#F4B400] px-5 py-3 font-bold text-[#1A1D64]">Buy / Send Request</button><button onClick={handleCart} className="rounded-full border border-[#2E3192] px-5 py-3 font-semibold text-[#2E3192]">Add to Cart</button></>}
+              {ad.negotiable && ad.status === "Approved" && !ad.reservedOrderId && <motion.button whileTap={{ scale: 0.95 }} whileHover={{ y: -2 }} onClick={handleMakeOffer} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#2E3192] text-white text-sm font-semibold shadow-sm hover:bg-[#1F2370] transition-all">
+                <HandCoins size={17}/> Make Offer
+              </motion.button>}
+              <motion.button whileTap={{ scale: 0.95 }} whileHover={{ y: -2 }} onClick={handlePriceAlert} className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-semibold shadow-sm transition-all ${priceAlertActive ? "bg-[#F9B233]/15 border-[#F9B233]/40 text-[#1A1D64]" : "border-[#2E3192]/20 bg-white text-[#2E3192] hover:bg-[#F2F4FF]"}`}>
+                <BellRing size={17}/> {priceAlertActive ? "Price Alert On" : "Price Alert"}
+              </motion.button>
+            </>)}
 
               <motion.button
                 whileTap={{ scale: 0.95 }}
@@ -999,6 +1075,7 @@ const ProductDetails = () => {
                 </p>
                 <button
                   onClick={() => {
+                    if(!requireBuyerAction())return;
                     if (!user) {
                       Swal.fire(
                         "Login required",
@@ -1060,9 +1137,9 @@ const ProductDetails = () => {
                       {sellerStats?.totalAds ?? "—"} Ads
                     </p>
 
-                    {sellerStats?.isTrustedSeller && (
+                    {sellerStats?.isEstablishedSeller && (
                       <span className="inline-block mt-1 text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
-                        ✔ Trusted Seller
+                        Active Seller
                       </span>
                     )}
                   </div>
@@ -1070,9 +1147,9 @@ const ProductDetails = () => {
               </div>
 
               {/* VERIFIED HINT */}
-              {sellerStats?.totalAds >= 5 && (
+              {sellerStats?.isVerifiedSeller && (
                 <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
-                  ✅ Verified active seller
+                  ✅ Verified Seller
                 </div>
               )}
             </div>

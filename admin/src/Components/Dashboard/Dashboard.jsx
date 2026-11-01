@@ -1,4 +1,4 @@
-﻿// ðŸ“ src/pages/Dashboard.jsx
+// 📁 src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import adminApi from "../../api/adminApi.js"; // path adjust karo
@@ -12,7 +12,7 @@ import {
   MessageCircle,
   TrendingUp,
   MapPin,
-  BarChart3, // âœ… add this
+  BarChart3, // ✅ add this
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -42,14 +42,14 @@ const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // âœ… Fetch Admin Overview Data
- // âœ… Fetch Admin Overview Data
-// âœ… Fetch Admin Overview Data
+  // ✅ Fetch Admin Overview Data
+ // ✅ Fetch Admin Overview Data
+// ✅ Fetch Admin Overview Data
 useEffect(() => {
   const fetchStats = async () => {
     try {
       const res = await adminApi.get("/overview");
-      console.log("ADMIN OVERVIEW RAW RESPONSE ðŸ‘‰", res.data); // ðŸ”¥ ADD THIS
+      console.log("ADMIN OVERVIEW RAW RESPONSE 👉", res.data); // 🔥 ADD THIS
       setStats(res.data);
     } catch (err) {
       console.error(err);
@@ -95,7 +95,7 @@ useEffect(() => {
     months = [],
     monthlyAds = [],
     monthlyUsers = [],
-    adStatusCount = {},   // ðŸ”¥ IMPORTANT
+    adStatusCount = {},   // 🔥 IMPORTANT
     topCategory = "",
     topLocation = "",
     mostReportedCategory = "",
@@ -104,7 +104,7 @@ useEffect(() => {
   } = stats;
   
 
-  // âœ… Chart Data
+  // ✅ Chart Data
   // Create teal gradient inside useEffect or before return:
 const gradientFill = (ctx) => {
   const gradient = ctx.createLinearGradient(0, 0, 0, 300);
@@ -180,7 +180,7 @@ const adStatusData = {
 
 
 
-  // ðŸ§¾ Stat Cards
+  // 🧾 Stat Cards
   const cards = [
     {
       title: "Total Users",
@@ -269,7 +269,7 @@ const adStatusData = {
               transition={{ type: "spring", stiffness: 180 }}
               className="relative rounded-3xl p-5 bg-white/70 backdrop-blur-xl shadow-xl border border-teal-900/10 hover:shadow-2xl transition-all overflow-hidden"
             >
-              {/* ðŸ”µ Decorative gradient glow ring */}
+              {/* 🔵 Decorative gradient glow ring */}
               <div className="absolute inset-0 bg-gradient-to-br from-[#2E3192]/20 via-transparent to-[#1A1D64]/20 opacity-40 pointer-events-none"></div>
 
               {/* TOP Row */}
@@ -364,8 +364,8 @@ const adStatusData = {
           </motion.div>
         </div>
 
-        {/* ðŸ§© Revenue & Engagement Overview Section */}
-        {/* ðŸŒŸ Revenue & Engagement Overview */}
+        {/* 🧩 Revenue & Engagement Overview Section */}
+        {/* 🌟 Revenue & Engagement Overview */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -389,7 +389,7 @@ const adStatusData = {
 
           {/* Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-            {/* 1ï¸âƒ£ User Engagement Rate */}
+            {/* 1️⃣ User Engagement Rate */}
             <motion.div
               whileHover={{ scale: 1.06, y: -4 }}
               transition={{ type: "spring", stiffness: 200 }}
@@ -416,7 +416,7 @@ const adStatusData = {
               </p>
             </motion.div>
 
-            {/* 2ï¸âƒ£ Total Messages */}
+            {/* 2️⃣ Total Messages */}
             <motion.div
               whileHover={{ scale: 1.06, y: -4 }}
               transition={{ type: "spring", stiffness: 200 }}
@@ -442,7 +442,7 @@ const adStatusData = {
               </p>
             </motion.div>
 
-            {/* 3ï¸âƒ£ Ad Conversion Rate */}
+            {/* 3️⃣ Ad Conversion Rate */}
             <motion.div
               whileHover={{ scale: 1.06, y: -4 }}
               transition={{ type: "spring", stiffness: 200 }}
@@ -470,7 +470,7 @@ const adStatusData = {
           </div>
         </motion.div>
 
-        {/* ðŸ§© Category Performance Insights */}
+        {/* 🧩 Category Performance Insights */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -576,7 +576,7 @@ const adStatusData = {
           )}
         </motion.div>
 
-        {/* ðŸ“Š Ad Performance Breakdown Section */}
+        {/* 📊 Ad Performance Breakdown Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -771,18 +771,18 @@ const adStatusData = {
           </div>
         </motion.div>
 
-        {/* ðŸ—ºï¸ Top Locations & User Activity (Alinafe Premium Design) */}
+        {/* 🗺️ Top Locations & User Activity (Alinafe Premium Design) */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="relative overflow-hidden rounded-3xl bg-white/60 backdrop-blur-xl p-10 shadow-xl mb-20 border border-teal-900/10"
         >
-          {/* ðŸŒ« Floating Teal Accent Blobs */}
+          {/* 🌫 Floating Teal Accent Blobs */}
           <div className="absolute top-10 -left-10 w-44 h-44 bg-[#2E3192]/20 rounded-full blur-[120px]"></div>
           <div className="absolute bottom-10 -right-10 w-56 h-56 bg-[#1A1D64]/20 rounded-full blur-[130px]"></div>
 
-          {/* ðŸ”¹ Header */}
+          {/* 🔹 Header */}
           <div className="relative flex flex-col md:flex-row md:items-center md:justify-between mb-10 z-10">
             <div className="flex items-center gap-3">
               <div className="bg-[#2E3192]/10 p-3 rounded-xl border border-[#2E3192]/20">
@@ -809,7 +809,7 @@ const adStatusData = {
             </motion.span>
           </div>
 
-          {/* ðŸ”¸ Charts Layout */}
+          {/* 🔸 Charts Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-10">
             {/* Left: Bar Chart */}
             <motion.div
@@ -929,7 +929,7 @@ const adStatusData = {
             </motion.div>
           </div>
 
-          {/* ðŸ”¹ Highlight Card */}
+          {/* 🔹 Highlight Card */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -956,7 +956,7 @@ const adStatusData = {
         </motion.div>
 
         {/* Quick Insights */}
-        {/* ðŸ” Key Insights Section */}
+        {/* 🔍 Key Insights Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
           {[
             { title: "Top Category", value: topCategory },
@@ -983,7 +983,7 @@ const adStatusData = {
           ))}
         </div>
 
-        {/* ðŸŒ¿ Footer (Alinafe Theme) */}
+        {/* 🌿 Footer (Alinafe Theme) */}
         <div className="text-center text-xs text-[#1A1D64]/70 mt-14 pb-6">
           © {new Date().getFullYear()}
           <span className="font-semibold text-[#1F2370]"> Alinafe Admin</span> —

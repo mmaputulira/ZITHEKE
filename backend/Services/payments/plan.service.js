@@ -1,10 +1,7 @@
 import mongoose from "mongoose";
 import Plan from "../../models/Plan.js";
 import Subscription from "../../models/Subscription.js";
-import {
-  ALLOWED_PREMIUM_PLAN_AMOUNTS,
-  MEMBERSHIP_PLANS,
-} from "../../constants/membershipPlans.js";
+import { MEMBERSHIP_PLANS } from "../../constants/membershipPlans.js";
 import { SUBSCRIPTION_STATUSES } from "../../constants/subscriptionStatuses.js";
 
 const createError = (statusCode, message) => {
@@ -91,11 +88,8 @@ const assertAllowedPlanPrice = (slug, price) => {
     return;
   }
 
-  if (!ALLOWED_PREMIUM_PLAN_AMOUNTS.includes(Number(price))) {
-    throw createError(
-      409,
-      `Premium plan price must be one of: ${ALLOWED_PREMIUM_PLAN_AMOUNTS.join(", ")} MWK`
-    );
+  if (!Number.isFinite(Number(price)) || Number(price) <= 0) {
+    throw createError(409, "Premium plan price must be greater than 0 MWK");
   }
 };
 

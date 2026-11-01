@@ -1,9 +1,8 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Sidebar from "../../Components/Sidebar/Sidebar.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import axios from "axios";
-import usePremiumAccess from "../../hooks/usePremiumAccess.js";
-import { featureAd, unfeatureAd } from "../../services/membership.service.js";
+import { unfeatureAd } from "../../services/membership.service.js";
 import {
   PlusCircle,
   Edit3,
@@ -22,6 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardContent, CardFooter } from "../ui/card.jsx";
 import { Button } from "../ui/button.jsx";
 import { Input } from "../ui/input.jsx";
+import CurrencyInput from "../Common/CurrencyInput.jsx";
 import { Textarea } from "../ui/textarea.jsx";
 import {
   Dialog,
@@ -37,7 +37,6 @@ const HIDE_CONDITION_CATEGORIES = new Set(["Agriculture", "Jobs", "Services"]);
 
 const MyAds = () => {
   const { user } = useAuth();
-  const { access, hasRequiredPlan, refreshAccess } = usePremiumAccess("basic");
   const navigate = useNavigate();
   const BASE_URL = "/api";
 
@@ -151,38 +150,20 @@ const MyAds = () => {
   const handleFeatureToggle = async (ad) => {
     if (!ad?._id) return;
 
-    if (!hasRequiredPlan && !ad.featured) {
-      const result = await Swal.fire({
-        title: "Upgrade required",
-        text: "Featuring ads requires at least the BASIC membership plan.",
-        icon: "info",
-        showCancelButton: true,
-        confirmButtonText: "View plans",
-        cancelButtonText: "Not now",
-        confirmButtonColor: "#2E3192",
-      });
-
-      if (result.isConfirmed) {
-        navigate("/pricing");
-      }
+    if (!ad.featured) {
+      navigate(`/pricing?adId=${encodeURIComponent(ad._id)}`);
       return;
     }
 
     try {
       setTogglingFeatureId(ad._id);
-      if (ad.featured) {
-        await unfeatureAd(ad._id);
-      } else {
-        await featureAd(ad._id);
-      }
+      await unfeatureAd(ad._id);
 
       setAds((prev) =>
         prev.map((item) =>
           item._id === ad._id ? { ...item, featured: !ad.featured } : item
         )
       );
-
-      await refreshAccess();
 
       Swal.fire({
         icon: "success",
@@ -365,41 +346,17 @@ const MyAds = () => {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 rounded-3xl border border-[#DDE4FF] bg-white p-5 shadow-[0_18px_44px_-30px_rgba(46,49,146,0.18)]"
+          className="mb-6 rounded-3xl border border-[#DDE4FF] bg-gradient-to-r from-white to-[#F8FAFF] p-5 shadow-[0_18px_44px_-30px_rgba(46,49,146,0.18)]"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2E3192]/70">
-                Membership Access
-              </p>
-              <div className="mt-1 flex items-center gap-2">
-                <span className="inline-flex items-center gap-2 rounded-full bg-[#EEF2FF] px-3 py-1 text-sm font-semibold text-[#2E3192]">
-                  <Crown size={15} className="text-[#F4B400]" />
-                  {String(access?.plan?.name || "FREE").toUpperCase()}
-                </span>
-                {access?.isPremium && access?.subscription?.endDate && (
-                  <span className="text-xs text-gray-500">
-                    Active until{" "}
-                    {new Date(access.subscription.endDate).toLocaleDateString("en-MW", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
-                )}
-              </div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2E3192]/70">Advert Boosts</p>
+              <p className="mt-1 text-sm text-gray-600">Choose the exact listing you want to promote. Each paid plan applies only to that advert and expires automatically at the end of its purchased period.</p>
             </div>
-
-            {!hasRequiredPlan && (
-              <Button
-                type="button"
-                onClick={() => navigate("/pricing")}
-                className="rounded-full bg-gradient-to-r from-[#2E3192] to-[#1F2370] text-white shadow-[0_16px_32px_-18px_rgba(46,49,146,0.35)] transition hover:-translate-y-0.5"
-              >
-                <Sparkles size={16} />
-                Upgrade to feature ads
-              </Button>
-            )}
+            <span className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#EEF2FF] px-4 py-2 text-sm font-semibold text-[#2E3192]">
+              <Sparkles size={16} className="text-[#F4B400]" />
+              {ads.filter((item) => item.featured).length} active boost{ads.filter((item) => item.featured).length === 1 ? "" : "s"}
+            </span>
           </div>
         </motion.div>
 
@@ -500,13 +457,19 @@ const MyAds = () => {
                       <div className="flex items-center gap-2">
                         {ad.featured && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-[#F4B400]/15 px-2 py-1 font-semibold text-[#7a5600]">
-                            <Crown size={12} />
-                            Featured
+                            <Crown size={12} /> Featured
                           </span>
                         )}
                         <span className="capitalize">{ad.category}</span>
                       </div>
                     </div>
+                    {ad.featured && ad.boostEndDate && (
+                      <div className="mt-3 rounded-2xl border border-[#F4B400]/25 bg-[#fffaf0] px-3 py-2 text-xs text-[#6b5200]">
+                        <span className="font-semibold">Boost active</span>
+                        {ad.boostStartDate ? ` from ${new Date(ad.boostStartDate).toLocaleDateString("en-MW")}` : ""}
+                        {` until ${new Date(ad.boostEndDate).toLocaleDateString("en-MW")}`}
+                      </div>
+                    )}
                   </CardContent>
 
                   <CardFooter className="flex justify-between items-center gap-2 px-5 pb-5 pt-0">
@@ -535,9 +498,7 @@ const MyAds = () => {
                       className={`text-xs rounded-full px-3 ${
                         ad.featured
                           ? "border-[#F4B400] text-[#7a5600] hover:bg-[#fff8dd]"
-                          : hasRequiredPlan
-                          ? "border-[#2E3192] text-[#2E3192] hover:bg-[#E9EDFF]"
-                          : "border-[#2E3192]/30 text-[#2E3192]/60 hover:bg-[#E9EDFF]"
+                          : "border-[#2E3192] text-[#2E3192] hover:bg-[#E9EDFF]"
                       }`}
                       onClick={() => handleFeatureToggle(ad)}
                     >
@@ -546,11 +507,7 @@ const MyAds = () => {
                       ) : (
                         <Crown size={16} />
                       )}
-                      {ad.featured
-                        ? "Unfeature"
-                        : hasRequiredPlan
-                        ? "Feature"
-                        : "Upgrade"}
+                      {ad.featured ? "Unfeature" : "Boost Ad"}
                     </Button>
 
                     <Button
@@ -614,12 +571,12 @@ const MyAds = () => {
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-700 mb-1 block">Price</label>
-                        <Input
+                        <CurrencyInput
                           name="price"
-                          type="number"
                           value={updatedForm.price || ""}
                           onChange={handleChange}
                           placeholder="Price"
+                          className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                         />
                       </div>
 

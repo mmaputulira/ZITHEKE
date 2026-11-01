@@ -41,7 +41,7 @@ export const MembershipAccessProvider = ({ children }) => {
   const [error, setError] = useState("");
 
   const refreshAccess = useCallback(async () => {
-    if (!user) {
+    if (!user || user.accountType === "buyer") {
       setAccess(FREE_ACCESS);
       setError("");
       setLoading(false);

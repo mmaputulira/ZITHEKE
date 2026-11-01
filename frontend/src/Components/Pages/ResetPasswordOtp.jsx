@@ -24,7 +24,7 @@ const ResetPasswordOtp = () => {
     setMessage("");
 
     if (!token) {
-      setError("Reset session expired. Please use Forgot Password again.");
+      setError("Your password reset request has expired. Please use Forgot Password again.");
       return;
     }
     if (!password || password.length < 6) {

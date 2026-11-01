@@ -166,6 +166,14 @@ const Footer = () => {
             </ul>
           </motion.div>
         </div>
+
+        <div className="border-t border-[#2E3192]/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-gray-500">© {new Date().getFullYear()} Zitheke Marketplace. All rights reserved.</p>
+          <div className="flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">
+            <span>Powered by</span>
+            <span className="relative block w-36 sm:w-44 overflow-hidden rounded-lg bg-white" style={{aspectRatio:"2.516"}}><img src="/branding/restock-tech-official.png" alt="Restock Tech" className="absolute max-w-none" style={{width:"126.18%",left:"-13.88%",top:"-100.8%"}} /></span>
+          </div>
+        </div>
       </div>
     </footer>
   );

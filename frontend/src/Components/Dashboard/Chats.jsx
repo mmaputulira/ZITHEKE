@@ -1,4 +1,4 @@
-﻿// src/pages/Chats/Chats.jsx
+// src/pages/Chats/Chats.jsx
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import Sidebar from "../../Components/Sidebar/Sidebar.jsx";
@@ -78,7 +78,7 @@ const EmptyState = ({ onOpenSidebar }) => {
             Your messages live here
           </h2>
           <p className="mt-2 text-sm text-slate-600 text-center leading-relaxed">
-            Pick a conversation from the left panel to start chatting. Youâ€™ll see the ad context,
+            Pick a conversation from the left panel to start chatting. You’ll see the ad context,
             online status, and live typing updates.
           </p>
 
@@ -102,7 +102,7 @@ const EmptyState = ({ onOpenSidebar }) => {
 };
 
 /* ------------------------------------------
-  Typing Indicator (dots + subtitle â€œtypingâ€¦â€)
+  Typing Indicator (dots + subtitle “typing…”)
 ------------------------------------------- */
 const TypingIndicator = () => {
   return (
@@ -126,7 +126,7 @@ const TypingIndicator = () => {
             transition={{ duration: 0.6, repeat: Infinity, delay: 0.24 }}
           />
         </div>
-        <div className="mt-2 text-[11px] text-slate-500">typingâ€¦</div>
+        <div className="mt-2 text-[11px] text-slate-500">typing…</div>
       </div>
     </div>
   );
@@ -139,7 +139,7 @@ const Chats = () => {
   const [conversations, setConversations] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
 
-  // ðŸŸ¦ AD CONTEXT STATE
+  // 🟦 AD CONTEXT STATE
   const [activeAd, setActiveAd] = useState(null);
 
   const [messages, setMessages] = useState([]);
@@ -172,7 +172,7 @@ const Chats = () => {
   const navigate = useNavigate();
 
   /* ------------------------------------------
-     ðŸ”µ  . Fetch Conversations
+     🔵  . Fetch Conversations
   ------------------------------------------- */
   const fetchConvos = useCallback(async () => {
     if (!user?.uid) return;
@@ -188,14 +188,14 @@ const Chats = () => {
   }, [BASE, user?.uid]);
 
   /* ------------------------------------------
-     ðŸš€ 3. Load Conversations
+     🚀 3. Load Conversations
   ------------------------------------------- */
   useEffect(() => {
     fetchConvos();
   }, [fetchConvos]);
 
   /* ------------------------------------------
-     ðŸ“© 4. Load Messages
+     📩 4. Load Messages
   ------------------------------------------- */
   const { loadMessages, sendMessage, deleteForMe, deleteForEveryone } =
     useChatMessages({
@@ -206,7 +206,7 @@ const Chats = () => {
     });
 
   /* ------------------------------------------
-   ðŸ” AUTO OPEN CHAT FROM URL
+   🔁 AUTO OPEN CHAT FROM URL
 ------------------------------------------- */
   useEffect(() => {
     if (!autoChatId || conversations.length === 0 || autoOpenedRef.current) return;
@@ -243,7 +243,7 @@ const Chats = () => {
   }, [autoChatId, conversations, loadMessages, BASE, user?.uid]);
 
   /* ------------------------------------------
-     âœï¸ 5. Typing
+     ✏️ 5. Typing
   ------------------------------------------- */
   const handleTyping = (e) => {
     setText(e.target.value);
@@ -266,7 +266,7 @@ const Chats = () => {
   };
 
   /* ------------------------------------------
-     ðŸ—‘ï¸ 7. Delete Chat
+     🗑️ 7. Delete Chat
   ------------------------------------------- */
   const handleDeleteChat = async () => {
     const confirm = await Swal.fire({
@@ -290,19 +290,19 @@ const Chats = () => {
       setSelectedChat(null);
       setActiveAd(null);
     } catch (e) {
-      console.error("âŒ Delete chat error:", e);
+      console.error("❌ Delete chat error:", e);
     }
   };
 
   /* ------------------------------------------
-     ðŸŸ¢ Auto Scroll
+     🟢 Auto Scroll
   ------------------------------------------- */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typingStatus]);
 
   /* ------------------------------------------
-     ðŸ” Search Filter
+     🔍 Search Filter
   ------------------------------------------- */
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -352,7 +352,7 @@ const Chats = () => {
       { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
     );
 
-    // ðŸŸ¦ SET AD CONTEXT
+    // 🟦 SET AD CONTEXT
     setActiveAd(
       chat.adId
         ? {
@@ -422,7 +422,7 @@ const Chats = () => {
                 />
                 <input
                   className="w-full rounded-2xl bg-white/70 backdrop-blur-xl border border-white/70 pl-11 pr-11 py-3 text-sm text-slate-800 placeholder:text-slate-500 shadow-sm focus:shadow-md focus:outline-none focus:ring-2 focus:ring-[#2E3192]/25"
-                  placeholder="Search conversationsâ€¦"
+                  placeholder="Search conversations…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -446,7 +446,7 @@ const Chats = () => {
                     const isSelected = selectedChat?.conversationId === chat.conversationId;
 
                     const name = safe(chat.withUserName, "User");
-                    const lastMsg = safe(chat.lastMessage, safe(chat.lastMessageText, "Say hiâ€¦"));
+                    const lastMsg = safe(chat.lastMessage, safe(chat.lastMessageText, "Say hi…"));
                     const unread = Number(chat.unreadCount || chat.unread || 0);
                     const time =
                       timeAgoShort(chat.lastMessageAt || chat.updatedAt || chat.createdAt);
@@ -558,7 +558,7 @@ const Chats = () => {
                       />
                       <input
                         className="w-full rounded-2xl bg-white/70 backdrop-blur-xl border border-white/70 pl-11 pr-11 py-3 text-sm text-slate-800 placeholder:text-slate-500 shadow-sm focus:shadow-md focus:outline-none focus:ring-2 focus:ring-[#2E3192]/25"
-                        placeholder="Search conversationsâ€¦"
+                        placeholder="Search conversations…"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                       />
@@ -581,7 +581,7 @@ const Chats = () => {
                           const isSelected = selectedChat?.conversationId === chat.conversationId;
 
                           const name = safe(chat.withUserName, "User");
-                          const lastMsg = safe(chat.lastMessage, safe(chat.lastMessageText, "Say hiâ€¦"));
+                          const lastMsg = safe(chat.lastMessage, safe(chat.lastMessageText, "Say hi…"));
                           const unread = Number(chat.unreadCount || chat.unread || 0);
                           const time =
                             timeAgoShort(chat.lastMessageAt || chat.updatedAt || chat.createdAt);
@@ -857,7 +857,7 @@ const Chats = () => {
                       sendMessage({
                         payload: {
                           ...payload,
-                          // ðŸ”¥ keep your ad-context on send
+                          // 🔥 keep your ad-context on send
                           adId: selectedChat?.adId || null,
                           productTitle: selectedChat?.productTitle || "",
                           productImage: selectedChat?.productImage || "",

@@ -1,3 +1,11 @@
+import AccountGuard from "./Components/AccountGuard.jsx";
+import BuyerHome from "./Components/Buyer/BuyerHome.jsx";
+import BuyerLayout from "./Components/Buyer/BuyerLayout.jsx";
+import BuyerOverview from "./Components/Buyer/BuyerOverview.jsx";
+import BuyerCart from "./Components/Buyer/BuyerCart.jsx";
+import MyPurchases from "./Components/Dashboard/MyPurchases.jsx";
+import SalesOrders from "./Components/Dashboard/SalesOrders.jsx";
+import SellerDirectory from "./Components/SellerDirectory/SellerDirectory.jsx";
 // src/App.jsx
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
@@ -25,6 +33,13 @@ import ReportAd from "./Components/Dashboard/ReportAd.jsx";
 import Chats from "./Components/Dashboard/Chats.jsx";
 import DashboardLayout from "./Components/Dashboard/DashboardLayout";
 import MyReports from "./Components/Dashboard/MyReports";
+import MyPayments from "./Components/Dashboard/MyPayments.jsx";
+import MyMarketplace from "./Components/Dashboard/MyMarketplace.jsx";
+import Offers from "./Components/Dashboard/MarketplaceOffers.jsx";
+import PriceAlerts from "./Components/Dashboard/PriceAlerts.jsx";
+import Following from "./Components/Dashboard/Following.jsx";
+import BoostPerformance from "./Components/Dashboard/BoostPerformance.jsx";
+import Notifications from "./Components/Dashboard/Notifications.jsx";
 import Settings from "./Components/Setting/Settings.jsx";
 import SetPassword from "./Components/Setting/SetPassword.jsx";
 import VerifyEmail from "./Components/Setting/VerifyEmail.jsx";
@@ -37,6 +52,7 @@ import SellerProfile from "./Components/SellerProfile/SellerProfile";
 import PricingPage from "./Components/BoostAdSection/PricingPage.jsx";
 import CheckoutPage from "./Components/BoostAdSection/CheckoutPage.jsx";
 import MastercardCheckoutPage from "./Components/BoostAdSection/MastercardCheckoutPage.jsx";
+import NepgReturnPage from "./Components/BoostAdSection/NepgReturnPage.jsx";
 import SafetyTipsPage from "./Components/SafetyTips/SafetyTipsPage.jsx";
 import BrowseListings from "./Components/BrowseListings/BrowseListings.jsx";
 import BoostedPage from "./Components/BoostedPage/BoostedPage.jsx";
@@ -54,6 +70,26 @@ function App() {
 
   return (
     <Routes>
+      <Route path="/buyer" element={<MainLayout><BuyerHome /></MainLayout>} />
+      <Route path="/sellers" element={<MainLayout><SellerDirectory /></MainLayout>} />
+      <Route path="/buyer/login" element={!user ? <Login accountType="buyer" /> : <Navigate to={user.accountType === "buyer" ? "/buyer/account" : "/dashboard"} replace />} />
+      <Route path="/buyer/signup" element={!user ? <Signup accountType="buyer" /> : <Navigate to={user.accountType === "buyer" ? "/buyer/account" : "/dashboard"} replace />} />
+      <Route path="/buyer/account" element={<AccountGuard type="buyer"><MainLayout><BuyerLayout /></MainLayout></AccountGuard>}>
+        <Route index element={<BuyerOverview />} />
+        <Route path="cart" element={<BuyerCart />} />
+        <Route path="purchases" element={<MyPurchases />} />
+        <Route path="offers" element={<Offers />} />
+        <Route path="favorites" element={<Favorites />} />
+        <Route path="following" element={<Following />} />
+        <Route path="price-alerts" element={<PriceAlerts />} />
+
+
+
+        <Route path="notifications" element={<Notifications />} />
+        <Route path="profile" element={<Profile />} />
+        <Route path="settings" element={<Settings />} />
+        <Route path="myreports" element={<MyReports />} />
+      </Route>
       <Route
         path="/"
         element={
@@ -161,7 +197,15 @@ function App() {
         path="/checkout"
         element={
           <MainLayout>
-            <CheckoutPage />
+            <AccountGuard type="merchant"><CheckoutPage /></AccountGuard>
+          </MainLayout>
+        }
+      />
+      <Route
+        path="/checkout/nepg/return"
+        element={
+          <MainLayout>
+            <NepgReturnPage />
           </MainLayout>
         }
       />
@@ -169,7 +213,7 @@ function App() {
         path="/checkout/mastercard"
         element={
           <MainLayout>
-            <MastercardCheckoutPage mode="checkout" />
+            <AccountGuard type="merchant"><MastercardCheckoutPage mode="checkout" /></AccountGuard>
           </MainLayout>
         }
       />
@@ -224,26 +268,30 @@ function App() {
 
       <Route
         path="/dashboard/*"
-        element={user ? <DashboardLayout /> : <Navigate to="/login" replace />}
+        element={<AccountGuard type="merchant"><DashboardLayout /></AccountGuard>}
       >
-        <Route index element={<Dashboard />} />
+        <Route index element={<MyMarketplace />} />
         <Route path="my-ads" element={<MyAds />} />
-        <Route path="favorites" element={<Favorites />} />
+        <Route path="sales" element={<SalesOrders />} />
         <Route path="profile" element={<Profile />} />
         <Route path="settings" element={<Settings />} />
         <Route path="createAd" element={<CreateAd />} />
         <Route path="ReportAd" element={<ReportAd />} />
         <Route path="ReportAd/:id" element={<ReportAd />} />
         <Route path="myreports" element={<MyReports />} />
+        <Route path="payments" element={<MyPayments />} />
+        <Route path="boost-performance" element={<BoostPerformance />} />
+        <Route path="offers" element={<Offers />} />
+        <Route path="notifications" element={<Notifications />} />
       </Route>
 
       <Route
         path="/login"
-        element={!user ? <Login /> : <Navigate to="/" replace />}
+        element={!user ? <Login /> : <Navigate to={user.accountType === "buyer" ? "/buyer/account" : "/dashboard"} replace />}
       />
       <Route
         path="/signup"
-        element={!user ? <Signup /> : <Navigate to="/" replace />}
+        element={!user ? <Signup /> : <Navigate to={user.accountType === "buyer" ? "/buyer/account" : "/dashboard"} replace />}
       />
       <Route
         path="/check-email"

@@ -1,6 +1,7 @@
 import express from "express";
 import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js";
 import roleMiddleware from "../middlewares/roleMiddleware.js";
+import { requireAdminRoles } from "../middlewares/requireAdminRoles.js";
 
 import {
   getAllReports,
@@ -12,7 +13,7 @@ import {
 
 const router = express.Router();
 
-router.use(adminAuthMiddleware, roleMiddleware("admin"));
+router.use(adminAuthMiddleware, roleMiddleware("admin"), requireAdminRoles("marketplace","moderator","support"));
 
 router.get("/", getAllReports);
 router.get("/:id", getReportById);

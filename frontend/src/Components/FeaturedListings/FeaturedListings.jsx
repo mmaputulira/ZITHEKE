@@ -25,7 +25,7 @@ const FeaturedListings = () => {
   useEffect(() => {
     const fetchAds = async () => {
       try {
-        const res = await axios.get(`${BASE_URL}/ads`);
+        const res = await axios.get(`${BASE_URL}/ads/promo?limit=10`);
         const data = Array.isArray(res.data)
           ? res.data
           : res.data?.ads || [];
@@ -82,8 +82,7 @@ const FeaturedListings = () => {
             Featured <span className="text-[var(--brand)]">Listings</span>
           </motion.h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Hand-picked ads by our team — trending, trusted, and worth your
-            attention.
+            Paid promoted listings receiving extra visibility on Zitheke.
           </p>
         </div>
 

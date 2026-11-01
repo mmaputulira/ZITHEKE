@@ -1,3 +1,4 @@
+import { requireBuyer } from "../middlewares/marketplaceAuth.js";
 import express from "express";
 
 // 🔐 AUTH MIDDLEWARE
@@ -18,7 +19,7 @@ const router = express.Router();
 ===================================================== */
 router.put(
   "/toggle",
-  authMiddleware,
+  authMiddleware, requireBuyer,
   toggleFavorite
 );
 
@@ -30,7 +31,7 @@ router.put(
 ===================================================== */
 router.get(
   "/:userId",
-  authMiddleware,
+  authMiddleware, requireBuyer,
   getFavorites
 );
 

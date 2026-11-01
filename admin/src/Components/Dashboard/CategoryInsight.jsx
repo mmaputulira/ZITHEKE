@@ -1,7 +1,7 @@
-﻿// ðŸ“ src/pages/CategoryInsight.jsx
+// 📁 src/pages/CategoryInsight.jsx
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import adminApi from "../../api/adminApi"; // âœ… FIXED
+import adminApi from "../../api/adminApi"; // ✅ FIXED
 import {
   BarChart3,
   ArrowLeft,
@@ -38,11 +38,11 @@ const CategoryInsight = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ðŸ“Š Fetch Category Insights
+  // 📊 Fetch Category Insights
   useEffect(() => {
     const fetchCategoryInsights = async () => {
       try {
-        // âœ… adminApi USE (token interceptor applies here)
+        // ✅ adminApi USE (token interceptor applies here)
         const res = await adminApi.get("/overview");
         setData(res.data);
       } catch (err) {

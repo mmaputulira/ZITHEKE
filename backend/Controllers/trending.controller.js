@@ -1,3 +1,4 @@
+import { activeMerchantUids } from "../Services/publicMerchants.service.js";
 // src/controllers/trending.controller.js
 import Ad from "../models/Ad.js";
 
@@ -14,6 +15,7 @@ export const getTrendingAds = async (req, res) => {
       limit = 10,
     } = req.validated?.query || {};
 
+    const merchantUids = await activeMerchantUids();
     const safeLimit = Math.min(Number(limit) || 10, 50); // ⛔ hard cap
 
     let ads = [];
@@ -36,7 +38,7 @@ export const getTrendingAds = async (req, res) => {
             distanceField: "distance",
             maxDistance: 15000, // 15 KM
             spherical: true,
-            query: { status: "Approved" },
+            query: { status: "Approved", ownerUid:{$in:merchantUids} },
           },
         },
         {
@@ -90,7 +92,7 @@ export const getTrendingAds = async (req, res) => {
         {
           $match: {
             city: new RegExp(`^${city}$`, "i"),
-            status: "Approved",
+            status: "Approved", ownerUid:{$in:merchantUids},
           },
         },
         {
@@ -140,7 +142,7 @@ export const getTrendingAds = async (req, res) => {
     ================================================= */
     if (ads.length === 0) {
       const globalPipeline = [
-        { $match: { status: "Approved" } },
+        { $match: { status: "Approved", ownerUid:{$in:merchantUids} } },
         {
           $addFields: {
             trendingScore: {

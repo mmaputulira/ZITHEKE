@@ -205,7 +205,7 @@ export const getAllUsers = async (req, res) => {
   try {
     const users = await User.find()
       .select(
-        "uid name email phone photoURL location status adsPosted verified role createdAt"
+        "uid name email phone photoURL location status adsPosted verified merchantVerified accountType merchantStatus merchantApplication role createdAt"
       )
       .sort({ createdAt: -1 })
       .lean();
@@ -237,7 +237,7 @@ export const getUserDetails = async (req, res) => {
 
     const user = await User.findById(id)
       .populate("favorites", "title price category")
-      .select("-__v")
+      .select("uid name email phone photoURL location city status accountType merchantStatus merchantVerified merchantApplication favorites createdAt lastLogin")
       .lean();
 
     if (!user) {
@@ -527,6 +527,11 @@ export const updateAdByAdmin = async (req, res) => {
       return res.status(404).json({ message: "Ad not found" });
     }
 
+    if (req.body.status && String(req.body.status).trim() !== ad.status && !hasPermission(req.admin,"ads.moderate")) {
+      return res.status(403).json({message:"Listing status changes require advert moderation permission."});
+    }
+    if (ad.reservedOrderId) return res.status(409).json({message:"This listing is reserved for an accepted purchase. Resolve the order before editing."});
+
     const existingImages = parseArrayField(req.body.existingImages);
     const removedImages = parseArrayField(req.body.removedImages);
     const uploadedImages = [];
@@ -683,3 +688,4 @@ export const getAdsStats = async (req, res) => {
   }
 };
 
+import { hasPermission } from "../utils/adminAccess.js";

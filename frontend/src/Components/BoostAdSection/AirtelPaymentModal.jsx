@@ -27,11 +27,13 @@ import {
   verifyPayment,
 } from "../../services/membership.service.js";
 import useMembershipAccess from "../../hooks/useMembershipAccess.js";
+import airtelLogo from "../../assets/payments/airtel-money.jpg";
+import PaymentBrandMark from "./PaymentBrandMark.jsx";
 
 const FRESH_PROCESSING_MESSAGE =
   "Payment request sent. Please approve the Airtel Money prompt on your phone. Verification may take up to 3 minutes.";
 const REUSED_PROCESSING_MESSAGE =
-  "An earlier payment request is still pending. Please check your phone or wait for verification. No new Airtel prompt was sent.";
+  "An earlier payment request is still pending. Please check your phone or wait while we confirm it. No new Airtel prompt was sent.";
 
 const STATE_COPY = {
   idle: {
@@ -42,7 +44,7 @@ const STATE_COPY = {
   initiating: {
     eyebrow: "Starting payment",
     title: "Creating your payment request",
-    body: "We are preparing your subscription and sending the Airtel Money prompt.",
+    body: "We are preparing your advert boost and sending the Airtel Money prompt.",
   },
   waiting: {
     eyebrow: "Phone confirmation",
@@ -56,8 +58,8 @@ const STATE_COPY = {
   },
   success: {
     eyebrow: "Upgrade complete",
-    title: "Membership activated",
-    body: "Your premium access is now active and premium features are unlocked.",
+    title: "Advert boost activated",
+    body: "Your selected advert is now boosted for the purchased plan duration.",
   },
   failed: {
     eyebrow: "Payment failed",
@@ -147,9 +149,13 @@ const AirtelPaymentModal = ({
   open,
   onOpenChange,
   plan,
+  adId,
+  ad,
+  scope = "ad_boost",
   onSuccess,
 }) => {
   const { refreshAccess } = useMembershipAccess();
+  const isSellerMembership = scope === "seller_membership";
   const [msisdn, setMsisdn] = useState("");
   const [formError, setFormError] = useState("");
   const [modalState, setModalState] = useState("idle");
@@ -223,6 +229,21 @@ const AirtelPaymentModal = ({
   };
 
   const currentCopy = STATE_COPY[modalState] || STATE_COPY.idle;
+  const effectiveCopy = isSellerMembership
+    ? {
+        ...currentCopy,
+        body:
+          modalState === "initiating"
+            ? "We are preparing your seller subscription and sending the Airtel Money prompt."
+            : modalState === "success"
+            ? "Your seller account plan is now active for the purchased duration."
+            : currentCopy.body,
+        title:
+          modalState === "success"
+            ? "Seller subscription activated"
+            : currentCopy.title,
+      }
+    : currentCopy;
 
   const planPrice = useMemo(() => {
     return getDisplayPlanPrice(plan);
@@ -330,7 +351,7 @@ const AirtelPaymentModal = ({
     setModalState("initiating");
 
     try {
-      const subscription = await createSubscriptionIntent(plan._id);
+      const subscription = await createSubscriptionIntent(plan._id, isSellerMembership ? null : adId, scope);
       const paymentResult = await createAirtelPaymentIntent({
         subscriptionId: subscription?._id,
         msisdn: normalizedNumber,
@@ -419,17 +440,25 @@ const AirtelPaymentModal = ({
           <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(46,49,146,0.18)_1px,transparent_1px),linear-gradient(90deg,rgba(46,49,146,0.18)_1px,transparent_1px)] [background-size:22px_22px]" />
 
           <div className="relative z-10 p-6 sm:p-7">
-            <DialogHeader className="space-y-3 text-left">
-              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#2E3192]/10 bg-[#EEF2FF] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#2E3192]">
-                <Smartphone size={14} className="text-[#F4B400]" />
-                {currentCopy.eyebrow}
+            <DialogHeader className="space-y-4 text-left">
+              <PaymentBrandMark
+                src={airtelLogo}
+                alt="Airtel Money logo"
+                variant="square"
+                size="modal"
+              />
+              <div className="space-y-3 px-0.5">
+                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#2E3192]/10 bg-[#EEF2FF] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#2E3192]">
+                  <Smartphone size={14} className="text-[#F4B400]" />
+                  {effectiveCopy.eyebrow}
+                </div>
+                <DialogTitle className="text-2xl font-semibold tracking-tight text-[#1c2454]">
+                  {effectiveCopy.title}
+                </DialogTitle>
+                <DialogDescription className="text-sm leading-6 text-slate-600">
+                  {effectiveCopy.body}
+                </DialogDescription>
               </div>
-              <DialogTitle className="text-2xl font-semibold tracking-tight text-[#1c2454]">
-                {currentCopy.title}
-              </DialogTitle>
-              <DialogDescription className="text-sm leading-6 text-slate-600">
-                {currentCopy.body}
-              </DialogDescription>
             </DialogHeader>
 
             <div className="mt-6 rounded-[1.6rem] border border-[#E6EAFF] bg-[#F8FAFF] p-4">
@@ -442,7 +471,7 @@ const AirtelPaymentModal = ({
                     {plan?.name || "Premium Plan"}
                   </h3>
                   <p className="mt-1 text-sm text-slate-500">
-                    {plan?.durationDays || 0} days premium access
+                    {plan?.durationDays || 0} days {isSellerMembership ? "seller membership" : "boosted visibility"}
                   </p>
                 </div>
                 <div className="rounded-2xl bg-white px-4 py-3 text-right shadow-sm ring-1 ring-[#E8ECFF]">
@@ -508,7 +537,7 @@ const AirtelPaymentModal = ({
                     <div className="flex items-start gap-3 rounded-2xl border border-[#E6EAFF] bg-[#F8FAFF] px-4 py-3 text-sm text-slate-600">
                       <ShieldCheck size={18} className="mt-0.5 shrink-0 text-[#2E3192]" />
                       <span>
-                        We never trust frontend payment success. Your membership upgrades only after backend verification.
+                        {isSellerMembership ? "Your seller subscription will be activated once your Airtel Money payment has been successfully confirmed." : "Your selected advert will be boosted once your Airtel Money payment has been successfully confirmed."}
                       </span>
                     </div>
                   </div>
@@ -525,12 +554,12 @@ const AirtelPaymentModal = ({
                           ? "Sending Airtel request"
                           : modalState === "waiting"
                           ? "Waiting for phone approval"
-                          : "Verifying with backend"}
+                          : "Confirming your payment"}
                       </p>
                       <p className="mt-2 text-sm leading-6 text-slate-600">
                         {modalState === "waiting"
                           ? processingMessage || STATE_COPY.waiting.body
-                          : processingMessage || "Stay on this screen while we complete the verification safely."}
+                          : processingMessage || "Stay on this screen while we confirm your payment."}
                       </p>
                     </div>
 
@@ -545,13 +574,13 @@ const AirtelPaymentModal = ({
                       <StatusStep
                         active={["verifying", "success"].includes(modalState)}
                         index={3}
-                        label="Verify"
+                        label="Confirm"
                         done={modalState === "success"}
                       />
                     </div>
 
                     <p className="text-center text-xs text-slate-500">
-                      Verification attempts: {verificationAttempts} / {VERIFICATION_SCHEDULE_MS.length}
+                      Payment checks: {verificationAttempts} / {VERIFICATION_SCHEDULE_MS.length}
                     </p>
                   </div>
                 )}
@@ -563,14 +592,14 @@ const AirtelPaymentModal = ({
                         <CheckCircle2 className="h-9 w-9 text-emerald-500" />
                       </div>
                       <p className="mt-4 text-xl font-semibold text-[#1c2454]">
-                        Premium unlocked
+                        {isSellerMembership ? "Seller subscription activated" : "Advert boost activated"}
                       </p>
                       <p className="mt-2 text-sm leading-6 text-emerald-700">
-                        Your membership has been verified and activated. Premium actions are now available immediately.
+                        {isSellerMembership ? "Your payment has been confirmed and your seller account plan is now active for the selected duration." : "Your payment has been confirmed and this advert is now boosted for the selected plan duration."}
                       </p>
                       <div className="mt-4 rounded-2xl border border-white bg-white px-4 py-3 text-left shadow-sm ring-1 ring-[#E8ECFF]">
                         <p className="text-xs uppercase tracking-[0.22em] text-[#2E3192]/55">
-                          Plan Active Until
+                          {isSellerMembership ? "Plan Active Until" : "Boost Active Until"}
                         </p>
                         <p className="mt-2 text-base font-semibold text-[#1c2454]">
                           {formatDate(
@@ -672,7 +701,7 @@ const AirtelPaymentModal = ({
                   onClick={() => onOpenChange(false)}
                   className="h-12 w-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 text-white shadow-[0_16px_36px_rgba(16,185,129,0.2)] transition hover:-translate-y-0.5"
                 >
-                  Continue with premium access
+                  {isSellerMembership ? "Return to My Marketplace" : "View boosted advert"}
                 </Button>
               )}
 

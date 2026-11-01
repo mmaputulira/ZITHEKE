@@ -1,10 +1,11 @@
-﻿import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
 import { Loader2, XCircle, CheckCircle2, Upload } from "lucide-react";
 import CATEGORY_FIELDS from "./CategoryFields";
 import { Input, Textarea, Select } from "./FormControls";
-import { INDIA_LOCATIONS } from "../../Data/indiaCities";
+import CurrencyInput from "../Common/CurrencyInput.jsx";
+import { MALAWI_LOCATIONS } from "../../Data/malawiLocations";
 import { getPublicCategories } from "../../services/category.service.js";
 
 const normalizeCategoryMap = (categories = []) => {
@@ -287,7 +288,7 @@ const CreateAdForm = ({
     },
   ];
 
-  const indianStates = Object.keys(INDIA_LOCATIONS.Malawi || {});
+  const malawiDistricts = Object.keys(MALAWI_LOCATIONS.Malawi || {});
 
   useEffect(() => {
     let mounted = true;
@@ -874,12 +875,12 @@ const CreateAdForm = ({
       <div className="grid sm:grid-cols-2 gap-6">
         {/* PRICE INPUT */}
         <div className="flex flex-col gap-2">
-          <Input
-            type="number"
+          <CurrencyInput
             name="price"
             value={form.price ?? ""}
             onChange={handleChange}
             placeholder="Price (MK)"
+            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 outline-none transition focus:border-[#2E3192] focus:ring-2 focus:ring-[#2E3192]/10"
           />
 
           {/* ✅ NEGOTIABLE CHECKBOX */}
@@ -1017,17 +1018,17 @@ const CreateAdForm = ({
               <motion.div key="step3" className="space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:items-end">
                   <Select
-                    label="State"
+                    label="District"
                     name="state"
                     value={form.state || ""}
                     onChange={handleChange}
-                    options={indianStates}
+                    options={malawiDistricts}
                   />
                   <Input
                     name="city"
                     value={form.city}
                     onChange={handleChange}
-                    placeholder="City"
+                    placeholder="City / Town"
                   />
                   <Input
                     name="location"

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import adminApi from "../../api/adminApi.js"; // path adjust karo
 import {
@@ -207,7 +207,7 @@ const UserGrowth = () => {
           </motion.div>
         </div>
 
-        {/* ðŸ†• TOP ACTIVE SELLERS */}
+        {/* 🆕 TOP ACTIVE SELLERS */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}

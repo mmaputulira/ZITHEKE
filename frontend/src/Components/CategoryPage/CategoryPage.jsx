@@ -1,4 +1,4 @@
-﻿// src/Components/Pages/CategoryPage.jsx
+// src/Components/Pages/CategoryPage.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { categoryMap } from "../../utils/categoryMap.js";
+import CurrencyInput from "../Common/CurrencyInput.jsx";
 import {
   getCardImageOrFallback,
   getPrimaryImage,
@@ -68,21 +69,16 @@ const CategoryPage = () => {
           normalizedCategory ||
           category;
 
-        const res = await axios.get(
-          `/api/ads?category=${encodeURIComponent(
-            realCategory
-          )}&page=1&limit=${LIMIT}`
-        );
+        const res = await axios.get("/api/ads", {
+          params: {
+            category: realCategory,
+            ...(subcategory ? { subcategory } : {}),
+            page: 1,
+            limit: LIMIT,
+          },
+        });
 
-        let allAds = Array.isArray(res.data) ? res.data : res.data?.ads || [];
-
-        if (subcategory) {
-          allAds = allAds.filter(
-            (ad) =>
-              ad.subcategory &&
-              ad.subcategory.toLowerCase() === subcategory.toLowerCase()
-          );
-        }
+        const allAds = Array.isArray(res.data) ? res.data : res.data?.ads || [];
 
         setAds(allAds);
         setFiltered(allAds);
@@ -119,21 +115,16 @@ const CategoryPage = () => {
         normalizedCategory ||
         category;
 
-      const res = await axios.get(
-        `/api/ads?category=${encodeURIComponent(
-          realCategory
-        )}&page=${page}&limit=${LIMIT}`
-      );
+      const res = await axios.get("/api/ads", {
+        params: {
+          category: realCategory,
+          ...(subcategory ? { subcategory } : {}),
+          page,
+          limit: LIMIT,
+        },
+      });
 
-      let newAds = Array.isArray(res.data) ? res.data : res.data?.ads || [];
-
-      if (subcategory) {
-        newAds = newAds.filter(
-          (ad) =>
-            ad.subcategory &&
-            ad.subcategory.toLowerCase() === subcategory.toLowerCase()
-        );
-      }
+      const newAds = Array.isArray(res.data) ? res.data : res.data?.ads || [];
 
       setAds((prev) => [...prev, ...newAds]);
       const nextPage = page + 1;
@@ -378,28 +369,18 @@ const CategoryPage = () => {
             <>
               <div>
                 <p className="filter-title">Price</p>
-                <input
+                <CurrencyInput
                   placeholder="Min MK"
-                  type="number"
+                  name="minPrice"
                   value={filters.minPrice}
-                  onChange={(e) =>
-                    setFilters({
-                      ...filters,
-                      minPrice: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
                   className="filter-input mb-2"
                 />
-                <input
+                <CurrencyInput
                   placeholder="Max MK"
-                  type="number"
+                  name="maxPrice"
                   value={filters.maxPrice}
-                  onChange={(e) =>
-                    setFilters({
-                      ...filters,
-                      maxPrice: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
                   className="filter-input"
                 />
               </div>
@@ -605,28 +586,18 @@ const CategoryPage = () => {
 
               {!isJobsServices && (
                 <>
-                  <input
+                  <CurrencyInput
                     placeholder="Min MK"
-                    type="number"
+                    name="minPrice"
                     value={filters.minPrice}
-                    onChange={(e) =>
-                      setFilters({
-                        ...filters,
-                        minPrice: e.target.value,
-                      })
-                    }
+                    onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
                     className="filter-input"
                   />
-                  <input
+                  <CurrencyInput
                     placeholder="Max MK"
-                    type="number"
+                    name="maxPrice"
                     value={filters.maxPrice}
-                    onChange={(e) =>
-                      setFilters({
-                        ...filters,
-                        maxPrice: e.target.value,
-                      })
-                    }
+                    onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
                     className="filter-input"
                   />
 

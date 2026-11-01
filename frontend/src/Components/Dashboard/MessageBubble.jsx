@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Check,
   CheckCheck,
@@ -21,7 +21,7 @@ const MessageBubble = ({
   onDeleteMe,
   onDeleteEveryone,
 
-  // âœ… optional (for grouping)
+  // ✅ optional (for grouping)
   prevMsg = null,
   nextMsg = null,
 }) => {
@@ -52,7 +52,7 @@ const MessageBubble = ({
 
   const isMedia = !isDeleted && type !== "text";
 
-  // âœ… tighter spacing + grouping logic
+  // ✅ tighter spacing + grouping logic
   const prevSameSender =
     prevMsg &&
     String(prevMsg.senderId || "") === String(msg.senderId || "") &&
@@ -79,13 +79,13 @@ const MessageBubble = ({
     return <Check size={13} className="text-white" />;
   };
 
-  /* ðŸŽ¨ Brand palette */
+  /* 🎨 Brand palette */
   const meBubbleSurface =
     "bg-gradient-to-br from-[#2E3192] via-[#2E3192] to-[#1F2370] text-white";
   const otherBubbleSurface =
     "bg-white/55 backdrop-blur-xl text-gray-900";
 
-  /* ðŸ§© Asymmetric radius (chat-like) + grouping */
+  /* 🧩 Asymmetric radius (chat-like) + grouping */
   const radiusMe = [
     "rounded-t-2xl",
     prevSameSender ? "rounded-tr-lg rounded-tl-2xl" : "rounded-tr-2xl rounded-tl-2xl",
@@ -100,7 +100,7 @@ const MessageBubble = ({
     nextSameSender ? "rounded-bl-lg" : "rounded-bl-sm", // tail corner tight
   ].join(" ");
 
-  /* ðŸ§± Bubble base (responsive width + thinner borders) */
+  /* 🧱 Bubble base (responsive width + thinner borders) */
   const bubbleBase =
     "relative group px-3 py-2 pb-7 max-w-[95%] sm:max-w-[78%] lg:max-w-[62%] xl:max-w-[54%] " +
     "shadow-[0_10px_30px_rgba(0,0,0,0.06)] ring-1 ring-black/5 transition";
@@ -118,7 +118,7 @@ const MessageBubble = ({
 
   const tempClass = isTemp && !isDeleted ? "opacity-80" : "";
 
-  /* âœ… meta badge inside bubble bottom-right */
+  /* ✅ meta badge inside bubble bottom-right */
   const metaBadgeClass = isDeleted
     ? isMe
       ? "bg-black/35 text-white ring-1 ring-black/20"
@@ -127,7 +127,7 @@ const MessageBubble = ({
     ? "bg-black/35 text-white ring-1 ring-black/20"
     : "bg-white text-teal-700 ring-1 ring-black/10";
 
-  /* ðŸ–¼ï¸ media frame */
+  /* 🖼️ media frame */
   const mediaFrameBase =
     "relative overflow-hidden rounded-xl ring-1 ring-black/10 shadow-inner " +
     (isMe ? "bg-white/10" : "bg-white/70");
@@ -163,7 +163,7 @@ const MessageBubble = ({
             isMedia ? mediaLift : ""
           }`}
         >
-          {/* âœ… HOVER "MORE" CHIP (replaces â‹®) */}
+          {/* ✅ HOVER "MORE" CHIP (replaces ⋮) */}
           {!isDeleted && (
             <button
               onClick={() => setMenuOpen((s) => !s)}
@@ -396,7 +396,7 @@ const MessageBubble = ({
 )}
 
 
-          {/* âœ… compact meta badge inside bubble (bottom-right) */}
+          {/* ✅ compact meta badge inside bubble (bottom-right) */}
           <div className="absolute bottom-1.5 right-1.5 flex items-center gap-2">
             {/* TEMP STATUS LABEL */}
             {!isDeleted && isMe && isTemp && !msg.isDelivered && !msg.isRead && (

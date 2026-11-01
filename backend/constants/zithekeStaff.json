@@ -1,0 +1,57 @@
+[
+  {
+    "name": "Moses Chirambo",
+    "email": "moizmsanda@gmail.com",
+    "roles": [
+      "super_admin"
+    ]
+  },
+  {
+    "name": "Billiat Chikalusa",
+    "email": "billiatchikalusa@gmail.com",
+    "roles": [
+      "marketplace",
+      "moderator",
+      "support",
+      "content"
+    ]
+  },
+  {
+    "name": "Precious Mkandawire",
+    "email": "preciousmkandawire@gmail.com",
+    "roles": [
+      "finance"
+    ]
+  },
+  {
+    "name": "Roselyn Milanzi",
+    "email": "roselyncmchirambo@gmail.com",
+    "roles": [
+      "payment_verification"
+    ]
+  },
+  {
+    "name": "Emily Sikelo",
+    "email": "emilysikelo@gmail.com",
+    "roles": [
+      "payment_verification",
+      "reporting"
+    ]
+  },
+  {
+    "name": "Kondwani Kadzakumanja",
+    "email": "kondwanikadzakumanja2@gmail.com",
+    "roles": [
+      "moderator",
+      "support",
+      "reporting"
+    ]
+  },
+  {
+    "name": "John Kango",
+    "email": "kangojohn2020@gmail.com",
+    "roles": [
+      "risk"
+    ]
+  }
+]

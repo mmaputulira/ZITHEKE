@@ -1,3 +1,4 @@
+import PromotedSellers from "../PromotedSellers/PromotedSellers.jsx";
 import React from "react";
 
 // Core Sections
@@ -34,6 +35,7 @@ const Home = () => {
       <HeroSection />
 
       <CategoryBar />
+      <PromotedSellers />
       <Utensils />
 
       <SpotlightSection />

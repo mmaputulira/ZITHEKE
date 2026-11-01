@@ -12,10 +12,30 @@ const subscriptionSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    subscriptionReference: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+      trim: true,
+      maxlength: 120,
+    },
     planId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Plan",
       required: true,
+      index: true,
+    },
+    adId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Ad",
+      default: null,
+      index: true,
+    },
+    scope: {
+      type: String,
+      enum: ["ad_boost", "seller_membership"],
+      default: "ad_boost",
       index: true,
     },
     status: {
@@ -49,17 +69,37 @@ const subscriptionSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    performanceSnapshot: {
+      viewsAtStart: { type: Number, default: null },
+      savesAtStart: { type: Number, default: null },
+      capturedAt: { type: Date, default: null },
+    },
   },
   { timestamps: true }
 );
 
 subscriptionSchema.index({ userId: 1, status: 1, createdAt: -1 });
 subscriptionSchema.index({ status: 1, endDate: 1 });
+subscriptionSchema.index({ userId: 1, adId: 1, status: 1, createdAt: -1 });
 subscriptionSchema.index(
-  { userId: 1, status: 1 },
+  { userId: 1, adId: 1, status: 1 },
   {
     unique: true,
-    partialFilterExpression: { status: SUBSCRIPTION_STATUSES.ACTIVE },
+    partialFilterExpression: {
+      status: SUBSCRIPTION_STATUSES.ACTIVE,
+      adId: { $type: "objectId" },
+    },
+  }
+);
+subscriptionSchema.index(
+  { userId: 1, scope: 1, status: 1 },
+  {
+    name: "uniq_active_seller_membership",
+    unique: true,
+    partialFilterExpression: {
+      status: SUBSCRIPTION_STATUSES.ACTIVE,
+      scope: "seller_membership",
+    },
   }
 );
 
