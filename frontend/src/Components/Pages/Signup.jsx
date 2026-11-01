@@ -2,11 +2,14 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../../firebase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Mail, Lock, User, Phone } from "lucide-react";
 import { useAuth } from "../../context/AuthContext.jsx";
 
-const Signup = () => {
+const Signup = ({ accountType = "merchant" }) => {
+  const location = useLocation();
+  const buyerPortal = accountType === "buyer";
+  const destination = location.state?.returnTo?.startsWith("/ad/") ? location.state.returnTo : buyerPortal ? "/buyer/account" : "/dashboard";
   const navigate = useNavigate();
   const { setUser } = useAuth();
   const [name, setName] = useState("");
@@ -38,6 +41,7 @@ const Signup = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          accountType,
           name: name.trim(),
           email: email.trim(),
           phone: phone.trim(),
@@ -50,7 +54,7 @@ const Signup = () => {
         throw new Error(data?.message || "Signup failed");
       }
 
-      navigate("/login");
+      navigate(buyerPortal ? "/buyer/login" : "/login");
     } catch (err) {
       setError(err.message || "Signup failed");
     } finally {
@@ -70,6 +74,7 @@ const Signup = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          accountType,
           idToken,
           uid: user.uid,
           name: user.displayName || "User",
@@ -85,12 +90,14 @@ const Signup = () => {
 
       if (data?.user) {
         const mergedUser = {
+          ...data.user,
           uid: data.user.uid,
           email: data.user.email || null,
           name: data.user.name,
           photoURL: data.user.photoURL || "",
           role: data.user.role || "user",
           phone: data.user.phone || "",
+        accountType:data.user.accountType, merchantStatus:data.user.merchantStatus, canSell:data.user.canSell, canBuy:data.user.canBuy, status:data.user.status,
         };
         localStorage.setItem("authUser", JSON.stringify(mergedUser));
         setUser(mergedUser);
@@ -100,7 +107,7 @@ const Signup = () => {
       if (data?.refreshToken)
         localStorage.setItem("refreshToken", data.refreshToken);
 
-      navigate("/");
+      navigate(destination);
     } catch (err) {
       setError(err.message || "Google signup failed");
     }
@@ -182,12 +189,13 @@ const Signup = () => {
           className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md mx-auto"
         >
           <h1 className="text-2xl font-bold text-gray-800">
-            Create your Zitheke account
+            {buyerPortal ? "Create buyer account" : "Create seller account"}
           </h1>
           <p className="text-sm text-gray-500 mb-6">
-            Join the trusted local marketplace
+            {buyerPortal ? "Browse, negotiate and buy from local merchants" : "Post listings and boost your ads on Zitheke"}
           </p>
 
+          <button type="button" onClick={() => navigate(buyerPortal ? "/login" : "/buyer/login")} className="mb-4 text-sm font-semibold text-[#2E3192]">{buyerPortal ? "Looking to sell? Seller login" : "Looking to buy? Buyer login"}</button>
           {error && (
             <p className="text-red-600 text-xs text-center bg-red-50 py-2 rounded-lg mb-4">
               {error}
@@ -277,7 +285,7 @@ const Signup = () => {
           <p className="text-center text-sm mt-6 text-gray-600">
             Already have an account?{" "}
             <span
-              onClick={() => navigate("/login")}
+              onClick={() => navigate(buyerPortal ? "/buyer/login" : "/login")}
               className="text-[#2E3192] font-semibold cursor-pointer"
             >
               Log in

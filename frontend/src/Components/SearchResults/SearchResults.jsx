@@ -9,6 +9,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { formatPrice } from "../../utils/formatPrice";
 import {
   getCardImageOrFallback,
   getPrimaryImage,
@@ -32,6 +33,7 @@ const SearchResults = () => {
   const [sortBy, setSortBy] = useState("Newest");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -49,7 +51,8 @@ const SearchResults = () => {
           )}&location=${encodeURIComponent(district)}&page=${page}&limit=20&sort=${sortKey}`
         );
         setResults(res.data?.ads || []);
-        setTotalPages(res.data?.totalPages || 1);
+        setTotalPages(res.data?.totalPages || res.data?.pages || 1);
+        setTotalResults(Number(res.data?.total || 0));
       } catch (err) {
         console.error("Search error:", err);
       } finally {
@@ -90,7 +93,7 @@ const SearchResults = () => {
           </div>
 
           <span className="bg-white/15 backdrop-blur-md px-4 py-1.5 rounded-full text-sm">
-            {results.length} results
+            {totalResults} results
           </span>
         </div>
       </div>
@@ -108,7 +111,7 @@ const SearchResults = () => {
               </span>
             )}
             <span className="text-gray-500">
-              {results.length} results
+              {totalResults} results
             </span>
           </div>
 
@@ -210,7 +213,7 @@ const SearchResults = () => {
                 {/* CONTENT */}
                 <div className="p-5">
                   <p className="text-lg font-semibold text-[#2E3192] mb-1">
-                    MK {ad.price?.toLocaleString()}
+                    {formatPrice(ad.price, "MWK ")}
                   </p>
 
                   <h3 className="font-medium line-clamp-1 mb-1">
@@ -228,9 +231,9 @@ const SearchResults = () => {
                         {ad.category}
                       </span>
                     )}
-                    {ad.subCategory && (
+                    {ad.subcategory && (
                       <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
-                        {ad.subCategory}
+                        {ad.subcategory}
                       </span>
                     )}
                   </div>

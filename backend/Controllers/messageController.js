@@ -1,3 +1,4 @@
+import { validateEngagement } from "../Services/marketplaceIdentity.service.js";
 // controllers/messageController.js
 import mongoose from "mongoose";
 import fs from "fs/promises";
@@ -11,7 +12,7 @@ import { isLocalUploadUrl, localAbsolutePathFromUrl } from "../utils/uploadPath.
    🔹 Helpers
 ===================================================== */
 
-const ALLOWED_TYPES = new Set(["text", "image", "video", "pdf", "file", "deleted"]);
+const ALLOWED_TYPES = new Set(["text", "image", "video", "audio", "document", "pdf", "file", "deleted"]);
 const MAX_TEXT_LENGTH = 2000;
 
 // simple per-user rate guard (in-memory)
@@ -169,7 +170,7 @@ export const saveMessage = async (req, res) => {
 
     // ✅ validate content
     const text = typeof message === "string" ? message.trim() : "";
-    const hasMedia = ["image", "video", "pdf", "file"].includes(msgType);
+    const hasMedia = ["image", "video", "audio", "document", "pdf", "file"].includes(msgType);
 
     if (msgType === "text") {
       if (!text) return res.status(400).json({ error: "Message is required" });
@@ -187,6 +188,7 @@ export const saveMessage = async (req, res) => {
       }
     }
 
+    const engagement = await validateEngagement({ senderId, receiverId, adId });
     // ✅ FIND CONVERSATION (participants + adId)
     let convo = await Conversation.findOne({
       participants: { $all: [senderId, receiverId] },
@@ -202,8 +204,8 @@ export const saveMessage = async (req, res) => {
         participants: [senderId, receiverId],
 
         adId: adId || null,
-        productTitle: productTitle || "Listing",
-        productImage: productImage || "",
+        productTitle: engagement.ad?.title || "Merchant enquiry",
+        productImage: engagement.ad?.images?.[0] || "",
 
         unreadCounts: {
           [senderId]: 0,
@@ -340,7 +342,7 @@ export const saveMessage = async (req, res) => {
               { $set: { isDelivered: true, deliveredAt } }
             );
 
-            req.io.to(convo._id.toString()).emit("message:delivered", {
+            req.io.to(senderId).emit("message:delivered", {
               messageId: newMsg._id.toString(),
               receiverId,
               deliveredAt,

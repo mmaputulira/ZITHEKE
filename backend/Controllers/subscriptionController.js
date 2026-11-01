@@ -10,10 +10,12 @@ const handleError = (res, error, fallbackMessage) =>
 
 export const createSubscription = async (req, res) => {
   try {
-    const { planId } = req.validated?.body || req.body;
+    const { planId, adId, scope } = req.validated?.body || req.body;
     const subscription = await subscriptionService.createPendingSubscription({
       userUid: req.user.uid,
       planId,
+      adId,
+      scope,
     });
 
     return res.status(201).json({

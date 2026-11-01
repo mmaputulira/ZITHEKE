@@ -14,6 +14,7 @@ const buildEventPayload = ({
   processedAt,
 }) => ({
   subscriptionId: String(subscription._id),
+  adId: subscription.adId ? String(subscription.adId) : null,
   userId: String(user._id),
   userUid: String(user.uid || ""),
   source,
@@ -64,25 +65,6 @@ const createAuditEvent = async ({
   );
 };
 
-const hasAnotherValidActiveSubscription = async ({
-  userId,
-  excludeSubscriptionId,
-  now,
-  session,
-}) => {
-  const query = {
-    userId,
-    status: SUBSCRIPTION_STATUSES.ACTIVE,
-    _id: { $ne: excludeSubscriptionId },
-    endDate: { $gt: now },
-  };
-
-  const finder = Subscription.exists(query);
-  if (session) finder.session(session);
-  const exists = await finder;
-  return Boolean(exists);
-};
-
 const expireSubscriptionSafely = async ({
   subscription,
   processedAt,
@@ -131,38 +113,18 @@ const expireSubscriptionSafely = async ({
         return;
       }
 
-      const hasOtherActive = await hasAnotherValidActiveSubscription({
-        userId: freshSubscription.userId,
-        excludeSubscriptionId: freshSubscription._id,
-        now: processedAt,
-        session,
-      });
-
-      if (hasOtherActive) {
-        result = {
-          action: "skipped",
-          reason: "another_valid_active_subscription_exists",
-          subscriptionId: String(freshSubscription._id),
-          userUid: String(user.uid || ""),
-        };
-        return;
-      }
-
       freshSubscription.status = SUBSCRIPTION_STATUSES.EXPIRED;
       freshSubscription.expiredAt = processedAt;
       freshSubscription.autoDowngraded = true;
       await freshSubscription.save({ session });
 
-      const featureRemoval = await Ad.updateMany(
-        {
-          ownerUid: user.uid,
-          featured: true,
-        },
-        {
-          $set: { featured: false },
-        },
-        { session }
-      );
+      const featureRemoval = freshSubscription.adId
+        ? await Ad.updateOne(
+            { _id: freshSubscription.adId, ownerUid: user.uid, boostSubscriptionId: freshSubscription._id },
+            { $set: { featured: false, boostSubscriptionId: null, boostPaymentId: null, boostStartDate: null, boostEndDate: null } },
+            { session }
+          )
+        : { modifiedCount: 0 };
 
       const featuredAdsRemoved = Number(featureRemoval.modifiedCount || 0);
 
@@ -203,7 +165,7 @@ const runExpirySync = async ({
   })
     .sort({ endDate: 1, createdAt: 1 })
     .limit(safeLimit)
-    .select("_id userId paymentId endDate status");
+    .select("_id userId paymentId adId endDate status");
 
   const summary = {
     processedAt: now,
@@ -233,6 +195,14 @@ const runExpirySync = async ({
   }
 
   return summary;
+};
+
+export const expireActiveAdBoostForSale = async ({ adId, ownerUid, now = new Date(), session = null }) => {
+  const query = User.findOne({ uid: ownerUid }).select("_id");
+  if (session) query.session(session);
+  const owner = await query;
+  if (!owner) return;
+  await Subscription.updateMany({ adId, userId: owner._id, scope: "ad_boost", status: SUBSCRIPTION_STATUSES.ACTIVE }, { $set: { status: SUBSCRIPTION_STATUSES.EXPIRED, expiredAt: now, autoDowngraded: true } }, session ? { session } : {});
 };
 
 export default {

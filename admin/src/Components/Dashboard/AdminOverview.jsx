@@ -1,7 +1,7 @@
-﻿// ðŸ“ src/pages/AdminOverview.jsx
+// 📁 src/pages/AdminOverview.jsx
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import adminApi from "../../api/adminApi"; // âœ… FIXED
+import adminApi from "../../api/adminApi"; // ✅ FIXED
 import {
   LayoutDashboard,
   RefreshCw,
@@ -47,7 +47,7 @@ const AdminOverview = () => {
     try {
       setRefreshing(true);
 
-      // âœ… adminApi USE (token interceptor applies here)
+      // ✅ adminApi USE (token interceptor applies here)
       const res = await adminApi.get("/overview");
 
       setStats(res.data);
@@ -63,7 +63,7 @@ const AdminOverview = () => {
     fetchStats();
   }, []);
 
-  // â³ LOADING
+  // ⏳ LOADING
   if (loading || !stats) {
     return (
       <div className="h-screen flex items-center justify-center text-[#1F2370] font-semibold text-xl">
@@ -72,7 +72,7 @@ const AdminOverview = () => {
     );
   }
 
-  // ðŸ“Š DATA
+  // 📊 DATA
   const {
     months,
     monthlyAds,
@@ -230,13 +230,13 @@ const AdminOverview = () => {
           ].map((item, i) => (
             <div key={i} className="bg-white p-6 rounded-3xl shadow">
               <h4 className="font-semibold text-[#1A1D64]">{item.label}</h4>
-              <p className="text-gray-700 mt-1">{item.value || "â€”"}</p>
+              <p className="text-gray-700 mt-1">{item.value || "—"}</p>
             </div>
           ))}
         </div>
 
         <div className="text-center text-gray-500 text-sm mt-12">
-          Â© {new Date().getFullYear()} Zitheke Admin Dashboard
+          © {new Date().getFullYear()} Zitheke Admin Dashboard
         </div>
       </motion.div>
     </section>

@@ -266,10 +266,10 @@ const RevenueSubscriptions = () => {
               Admin Analytics
             </div>
             <h1 className="mt-3 text-3xl font-extrabold text-[#1A1D64] tracking-tight">
-              Revenue &amp; Subscriptions
+              Revenue &amp; Advert Boosts
             </h1>
             <p className="text-sm text-gray-600 mt-1">
-              Track subscription users, payment status, and collected revenue.
+              Track advert boost purchases, payment status, selected listings, and collected revenue.
             </p>
           </div>
 
@@ -497,7 +497,7 @@ const RevenueSubscriptions = () => {
             ) : tableLoading ? (
               <div className="py-8 text-sm text-gray-500">Loading subscription records...</div>
             ) : subscriptions.length === 0 ? (
-              <div className="py-8 text-sm text-gray-500">No subscription records match the selected filters.</div>
+              <div className="py-8 text-sm text-gray-500">No advert boost records match the selected filters.</div>
             ) : (
               <>
                 <div className="overflow-x-auto">
@@ -509,7 +509,8 @@ const RevenueSubscriptions = () => {
                           "Email",
                           "Phone",
                           "Plan",
-                          "Subscription Status",
+                          "Advert",
+                          "Boost Status",
                           "Payment Status",
                           "Verification Status",
                           "Amount Paid",
@@ -542,6 +543,7 @@ const RevenueSubscriptions = () => {
                             <td className="px-4 py-3 min-w-[220px]">{item.email || "-"}</td>
                             <td className="px-4 py-3 whitespace-nowrap">{item.phone || "-"}</td>
                             <td className="px-4 py-3 whitespace-nowrap">{item.planName || "-"}</td>
+                            <td className="px-4 py-3 min-w-[220px] font-medium text-[#1A1D64]">{item.adTitle || "-"}</td>
                             <td className="px-4 py-3 whitespace-nowrap">
                               <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(item.subscriptionStatus, subscriptionLabel)}`}>
                                 {subscriptionLabel}

@@ -1,0 +1,168 @@
+{
+  "labels": {
+    "super_admin": "Super Administrator",
+    "marketplace": "Marketplace Operations Manager",
+    "finance": "Finance & Reconciliation Officer",
+    "payment_verification": "Payment Verification Officer",
+    "moderator": "Advert Moderation Officer",
+    "risk": "Risk & Fraud Review Officer",
+    "support": "Customer Service Officer",
+    "content": "Category & Content Manager",
+    "reporting": "Reporting & MIS Officer",
+    "technical": "Technical / System Support Administrator"
+  },
+  "permissions": {
+    "dashboard.read": [
+      "marketplace",
+      "finance",
+      "reporting"
+    ],
+    "finance.read": [
+      "finance",
+      "reporting"
+    ],
+    "finance.recover": [
+      "finance"
+    ],
+    "verification.read": [
+      "payment_verification",
+      "finance"
+    ],
+    "verification.write": [
+      "payment_verification"
+    ],
+    "plans.read": [
+      "marketplace",
+      "finance",
+      "reporting"
+    ],
+    "plans.write": [
+      "marketplace"
+    ],
+    "accounts.read": [
+      "marketplace",
+      "finance",
+      "moderator",
+      "support",
+      "risk"
+    ],
+    "accounts.write": [
+      "marketplace"
+    ],
+    "ads.read": [
+      "marketplace",
+      "moderator",
+      "content",
+      "reporting",
+      "risk"
+    ],
+    "ads.moderate": [
+      "marketplace",
+      "moderator"
+    ],
+    "ads.write": [
+      "marketplace",
+      "content"
+    ],
+    "categories.read": [
+      "marketplace",
+      "content",
+      "moderator",
+      "reporting"
+    ],
+    "categories.write": [
+      "marketplace",
+      "content"
+    ],
+    "orders.read": [
+      "marketplace",
+      "support",
+      "reporting"
+    ],
+    "reports.read": [
+      "marketplace",
+      "moderator",
+      "support",
+      "risk"
+    ],
+    "reports.write": [
+      "marketplace",
+      "moderator",
+      "support",
+      "risk"
+    ],
+    "messages.read": [
+      "support",
+      "risk"
+    ],
+    "messages.write": [
+      "support"
+    ],
+    "support.read": [
+      "support",
+      "marketplace"
+    ],
+    "notifications.read": [
+      "support",
+      "marketplace",
+      "content"
+    ],
+    "notifications.write": [
+      "support",
+      "marketplace",
+      "content"
+    ],
+    "risk.read": [
+      "risk"
+    ],
+    "audit.read": [
+      "risk",
+      "reporting",
+      "technical"
+    ],
+    "system.read": [
+      "technical"
+    ],
+    "access.manage": [],
+    "data.purge": [],
+    "settings.own": [
+      "super_admin",
+      "marketplace",
+      "finance",
+      "payment_verification",
+      "moderator",
+      "risk",
+      "support",
+      "content",
+      "reporting",
+      "technical"
+    ]
+  },
+  "pages": {
+    "": "dashboard.read",
+    "reconciliation": "finance.read",
+    "payment-verification": "verification.read",
+    "plans-pricing": "plans.read",
+    "orders": "orders.read",
+    "users": "accounts.read",
+    "users-legacy": "accounts.read",
+    "seller-360": "accounts.read",
+    "ads": "ads.read",
+    "ads-library": "ads.read",
+    "categories": "categories.read",
+    "reports": "reports.read",
+    "support": "support.read",
+    "contact-inbox": "support.read",
+    "messages": "messages.read",
+    "risk-flags": "risk.read",
+    "notifications": "notifications.read",
+    "audit-log": "audit.read",
+    "system-health": "system.read",
+    "admin-access": "access.manage",
+    "overview": "dashboard.read",
+    "revenue-subscriptions": "finance.read",
+    "category-insight": "dashboard.read",
+    "user-growth": "dashboard.read",
+    "settings": "settings.own"
+  }
+}

@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { ArrowLeft, Trash2, Tag } from "lucide-react";
 import { motion as Motion } from "framer-motion";
 import { getAvatarSrc, handleAvatarFallback } from "../../utils/avatar.js";
@@ -92,7 +92,7 @@ const ChatHeader = ({
             bg-gray-100 text-gray-600
           ">
             {typingStatus
-              ? "typingâ€¦"
+              ? "typing…"
               : isOnline
               ? "Online"
               : formatLastSeen(chat?.lastSeen)}

@@ -118,11 +118,11 @@ const buildCategoryFilters = ({ search = "", status = "" }) => {
   const trimmedSearch = String(search || "").trim();
   if (trimmedSearch) {
     filters.$or = [
-      { name: { $regex: trimmedSearch, $options: "i" } },
-      { slug: { $regex: trimmedSearch, $options: "i" } },
-      { keywords: { $regex: trimmedSearch, $options: "i" } },
-      { "subcategories.name": { $regex: trimmedSearch, $options: "i" } },
-      { "subcategories.slug": { $regex: trimmedSearch, $options: "i" } },
+      { name: { $regex: escapeRegex(trimmedSearch), $options: "i" } },
+      { slug: { $regex: escapeRegex(trimmedSearch), $options: "i" } },
+      { keywords: { $regex: escapeRegex(trimmedSearch), $options: "i" } },
+      { "subcategories.name": { $regex: escapeRegex(trimmedSearch), $options: "i" } },
+      { "subcategories.slug": { $regex: escapeRegex(trimmedSearch), $options: "i" } },
     ];
   }
 

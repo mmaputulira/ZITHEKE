@@ -85,6 +85,7 @@ const resolveMembershipAccessForUser = async (userUid) => {
   const subscription = await Subscription.findOne({
     userId: user._id,
     status: SUBSCRIPTION_STATUSES.ACTIVE,
+    scope: "seller_membership",
   })
     .populate("planId")
     .populate("paymentId")

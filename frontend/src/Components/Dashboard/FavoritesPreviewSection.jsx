@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Heart, ChevronRight, Eye } from "lucide-react";
 import { motion } from "framer-motion";
@@ -121,7 +121,7 @@ const FavoritesPreviewSection = () => {
                   {item.title}
                 </p>
                 <p className="text-xs text-gray-500 truncate">
-                  {item.category} â€¢ {item.city}
+                  {item.category} • {item.city}
                 </p>
 
                 <div className="mt-2 flex items-center justify-between">

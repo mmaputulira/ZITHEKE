@@ -6,7 +6,7 @@ import {
 } from "firebase/auth";
 import { motion } from "framer-motion";
 import { auth } from "../../firebase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Loader2,
   LogIn,
@@ -21,7 +21,10 @@ import {
 import { useAuth } from "../../context/AuthContext.jsx";
 import TurnstileWidget from "../ui/TurnstileWidget.jsx";
 
-const Login = () => {
+const Login = ({ accountType = "merchant" }) => {
+  const location = useLocation();
+  const buyerPortal = accountType === "buyer";
+  const destination = location.state?.returnTo?.startsWith("/ad/") ? location.state.returnTo : buyerPortal ? "/buyer/account" : "/dashboard";
   const { setUser } = useAuth();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -88,12 +91,14 @@ const Login = () => {
 
     if (data?.user) {
       const mergedUser = {
+        ...data.user,
         uid: data.user.uid,
         email: data.user.email || null,
         name: data.user.name,
         photoURL: data.user.photoURL || "",
         role: data.user.role || "user",
         phone: data.user.phone || "",
+        accountType:data.user.accountType, merchantStatus:data.user.merchantStatus, canSell:data.user.canSell, canBuy:data.user.canBuy, status:data.user.status,
       };
       localStorage.setItem("authUser", JSON.stringify(mergedUser));
       setUser(mergedUser);
@@ -135,20 +140,11 @@ const Login = () => {
 
     setLoading(true);
     try {
-      console.debug("Turnstile login payload debug:", {
-        isProd,
-        isEmail,
-        showCaptcha,
-        hasSiteKey: Boolean(TURNSTILE_SITE_KEY),
-        hasCaptchaToken: Boolean(captchaToken),
-        captchaTokenLength: String(captchaToken || "").length,
-        identifierField: "identifier",
-      });
-
       const res = await fetch(`${BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          accountType,
           identifier: identifierForApi,
           password,
           captchaToken,
@@ -176,7 +172,7 @@ const Login = () => {
 
       if (data?.token && data?.user) {
         storeAuth(data);
-        navigate("/dashboard");
+        navigate(destination);
       }
     } catch (err) {
       setError(err.message || "Login failed");
@@ -193,19 +189,20 @@ const Login = () => {
       const res = await fetch(`${BASE_URL}/auth/login/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: pendingPhone, otp: otp.trim() }),
+        body: JSON.stringify({
+          accountType, phone: pendingPhone, otp: otp.trim() }),
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data?.message || "OTP verification failed");
+        throw new Error(data?.message || "The code could not be confirmed");
       }
 
       if (data?.token && data?.user) {
         storeAuth(data);
-        navigate("/dashboard");
+        navigate(destination);
       }
     } catch (err) {
-      setError(err.message || "OTP verification failed");
+      setError(err.message || "The code could not be confirmed");
     } finally {
       setOtpLoading(false);
     }
@@ -222,6 +219,7 @@ const Login = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          accountType,
           idToken,
           uid: user.uid,
           name: user.displayName || "User",
@@ -237,7 +235,7 @@ const Login = () => {
       }
 
       storeAuth(data);
-      navigate("/");
+      navigate(destination);
     } catch (err) {
       setError(err.message || "Google login failed");
       try {
@@ -285,7 +283,8 @@ const Login = () => {
       const res = await fetch(`${BASE_URL}/auth/password/forgot/request-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          accountType, email }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -316,15 +315,16 @@ const Login = () => {
       const res = await fetch(`${BASE_URL}/auth/password/forgot/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp: otpCode }),
+        body: JSON.stringify({
+          accountType, email, otp: otpCode }),
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data?.message || "OTP verification failed");
+        throw new Error(data?.message || "The code could not be confirmed");
       }
 
       if (!data?.resetToken) {
-        throw new Error("Reset session could not be created. Try again.");
+        throw new Error("We could not start the password reset. Please try again.");
       }
 
       sessionStorage.setItem("forgotResetToken", data.resetToken);
@@ -332,7 +332,7 @@ const Login = () => {
       closeForgotModal();
       navigate("/reset-password-otp");
     } catch (err) {
-      setForgotError(err.message || "OTP verification failed");
+      setForgotError(err.message || "The code could not be confirmed");
     } finally {
       setForgotLoading(false);
     }
@@ -400,7 +400,7 @@ const Login = () => {
           <div className="p-8 sm:p-10">
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-800">
-                Login to your account
+                {buyerPortal ? "Buyer login" : "Seller login"}
               </h1>
               <p className="text-sm text-gray-500">
                 Use your email or phone with your password
@@ -470,7 +470,8 @@ const Login = () => {
                 </div>
               </div>
 
-              {error && (
+              <button type="button" onClick={() => navigate(buyerPortal ? "/login" : "/buyer/login")} className="mb-4 text-sm font-semibold text-[#2E3192]">{buyerPortal ? "Looking to sell? Seller login" : "Looking to buy? Buyer login"}</button>
+          {error && (
                 <p className="text-red-600 text-xs font-medium text-center bg-red-50 py-2 rounded-lg border border-red-100">
                   {error}
                 </p>
@@ -614,7 +615,7 @@ const Login = () => {
             <p className="text-center text-sm mt-6 text-gray-600">
               {/* Don't have an account?{" "} */}
               <span
-                onClick={() => navigate("/signup")}
+                onClick={() => navigate(buyerPortal ? "/buyer/signup" : "/signup")}
                 className="text-[#2E3192] font-semibold cursor-pointer hover:underline"
               >
                 Sign up

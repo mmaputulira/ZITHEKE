@@ -1,5 +1,6 @@
 export const PAYMENT_GATEWAYS = Object.freeze({
   AIRTEL_MONEY: "airtel_money",
+  NEPG: "nepg",
   MASTERCARD: "mastercard",
   BANK: "bank",
   STRIPE: "stripe",

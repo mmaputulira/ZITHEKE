@@ -6,6 +6,7 @@ import { PAYMENT_GATEWAYS } from "../../constants/paymentGateways.js";
 import { PAYMENT_STATUSES } from "../../constants/paymentStatuses.js";
 import { PAYMENT_VERIFICATION_STATUSES } from "../../constants/paymentVerificationStatuses.js";
 import AirtelGateway from "./gateways/airtel.gateway.js";
+import NepgGateway from "./gateways/nepg.gateway.js";
 import MastercardGateway from "./gateways/mastercard.gateway.js";
 import subscriptionService from "./subscription.service.js";
 
@@ -23,6 +24,7 @@ const assertObjectId = (value, label) => {
 
 const gateways = {
   [PAYMENT_GATEWAYS.AIRTEL_MONEY]: new AirtelGateway(),
+  [PAYMENT_GATEWAYS.NEPG]: new NepgGateway(),
   [PAYMENT_GATEWAYS.MASTERCARD]: new MastercardGateway(),
 };
 
@@ -138,7 +140,7 @@ const verifyPaymentRecord = async ({
       merchantTransactionId: payment.merchantTransactionId,
       previousPaymentStatus: payment.status,
       previousVerificationStatus: payment.verificationStatus,
-      airtelTransactionStatus:
+      gatewayTransactionStatus:
         verification?.rawResponsePayload?.verification?.data?.transaction?.status ||
         verification?.rawResponsePayload?.verification?.transaction?.status ||
         verification?.normalizedResponse?.rawGatewayStatus ||
@@ -298,7 +300,6 @@ const verifyPaymentRecord = async ({
         payment.rawResponsePayload = {
           ...(payment.rawResponsePayload || {}),
           verification: {
-            oauth: error?.oauthResponse || null,
             verification: error?.rawResponse || null,
           },
         };
@@ -349,7 +350,6 @@ const verifyPaymentRecord = async ({
       payment.rawResponsePayload = {
         ...(payment.rawResponsePayload || {}),
         verification: {
-          oauth: error?.oauthResponse || null,
           verification: error?.rawResponse || null,
         },
       };

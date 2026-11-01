@@ -1,277 +1,3 @@
-﻿// import React, { useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import { useAuth } from "../../context/AuthContext.jsx";
-// import { signOut } from "firebase/auth";
-// import { auth } from "../../firebase.js";
-// import {
-//   Menu,
-//   X,
-//   Bell,
-//   Bookmark,
-//   MessageSquare,
-//   LayoutDashboard,
-// } from "lucide-react";
-// import { FaSearch } from "react-icons/fa";
-// import { motion, AnimatePresence } from "framer-motion";
-
-// const Navbar = () => {
-//   const { user, setUser } = useAuth();
-//   const navigate = useNavigate();
-//   const [menuOpen, setMenuOpen] = useState(false);
-//   const [dropdownOpen, setDropdownOpen] = useState(false);
-//   const [showPopup, setShowPopup] = useState(false);
-//   const [selectedDistrict, setSelectedDistrict] = useState("All Malawi");
-//   const [searchQuery, setSearchQuery] = useState("");
-
-//   const districts = [
-//     "Balaka","Blantyre","Chikwawa","Chiradzulu","Chitipa","Dedza","Dowa","Karonga",
-//     "Kasungu","Likoma","Lilongwe","Machinga","Mangochi","Mchinji","Mulanje","Mwanza",
-//     "Mzimba","Neno","Nkhata Bay","Nkhotakota","Nsanje","Ntcheu","Ntchisi","Phalombe",
-//     "Rumphi","Salima","Thyolo","Zomba", "Mathura" , "Delhi"
-//   ];
-
-//   const handleDistrictClick = (district) => {
-//     setSelectedDistrict(district);
-//     setShowPopup(false);
-//   };
-
-//   const handleSearch = (e) => {
-//     e.preventDefault();
-//     if (!searchQuery.trim()) return;
-//     navigate(`/search-results?query=${searchQuery}&location=${selectedDistrict}`);
-//   };
-
-//   const handleLogout = async () => {
-//     await signOut(auth);
-//     setUser(null);
-//     navigate("/");
-//   };
-
-//   const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
-
-//   const getAvatar = () => {
-//     if (user?.photoURL) {
-//       return (
-       
-// <img
-//   src={
-//     user?.photoURL ||
-//     `https://ui-avatars.com/api/?name=${encodeURIComponent(
-//       user?.displayName || "User"
-//     )}&background=2E3192&color=fff&bold=true`
-//   }
-//   alt="User"
-//   className="w-9 h-9 rounded-full object-cover border border-white/40"
-// />
-//       );
-//     }
-//     if (user?.displayName || user?.email) {
-//       const letter = (user.displayName || user.email)?.charAt(0).toUpperCase();
-//       return (
-//         <div className="w-9 h-9 rounded-full bg-white text-[#2E3192] flex items-center justify-center font-semibold border border-white/40">
-//           {letter}
-//         </div>
-//       );
-//     }
-//     return (
-//       <img
-//         src="https://i.postimg.cc/8cPjsnM4/user.png"
-//         alt="Default user"
-//         className="w-9 h-9 rounded-full object-cover border border-white/40"
-//       />
-//     );
-//   };
-
-//   return (
-//     <>
-//       {/* âœ… NAVBAR */}
-//       <nav className="bg-[#2E3192] sticky top-0 z-50 shadow font-[Poppins]">
-//         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-10 py-3 flex items-center justify-between text-white gap-6 flex-wrap">
-
-//         <div
-//   onClick={() => navigate("/")}
-//   className="flex items-center cursor-pointer select-none"
-// >
-//   {/* ðŸŸ¨ Yellow Tag Icon â€” flipped + slightly raised */}
-//   <svg
-//     xmlns="http://www.w3.org/2000/svg"
-//     fill="#F4B400"
-//     viewBox="0 0 24 24"
-//     className="w-8 h-8 flex-shrink-0 -mt-[4px] -mr-[1px] transform scale-x-[-1]"
-//   >
-//     <path d="M21 11l-9-9H3v9l9 9 9-9zM7 7a2 2 0 110-4 2 2 0 010 4z" />
-//   </svg>
-
-//   {/* ðŸ”¤ Text Section */}
-//   <div className="flex flex-col leading-tight">
-//     <h1 className="text-2xl font-extrabold text-white tracking-tight">
-//       Zitheke
-//     </h1>
-//     <p className="text-sm font-semibold text-[#F4B400] ml-[6px] mt-[-2px]">
-//       Buy. Sell. Connect.
-//     </p>
-//   </div>
-// </div>
-
-
-//           {/* ðŸ” Search Bar Center */}
-//           <form
-//             onSubmit={handleSearch}
-//             className="hidden md:flex flex-1 justify-center items-center bg-white rounded-full shadow-md px-2 py-2 max-w-xl"
-//           >
-//             {/* Location Button */}
-//             <button
-//               type="button"
-//               onClick={() => setShowPopup(true)}
-//               className="bg-[#F9B233] text-[#2E3192] px-4 py-2 rounded-full font-medium hover:bg-[#e5a91e] transition-all"
-//             >
-//               {selectedDistrict}
-//             </button>
-
-//             {/* Divider */}
-//             <span className="mx-3 text-gray-300">|</span>
-
-//             {/* Input */}
-//             <input
-//               type="text"
-//               placeholder="I'm looking for..."
-//               value={searchQuery}
-//               onChange={(e) => setSearchQuery(e.target.value)}
-//               className="flex-1 px-2 text-gray-700 focus:outline-none"
-//             />
-
-//             {/* Search Button */}
-//             <button type="submit" className="bg-[#2E3192] text-white p-2 rounded-full hover:bg-[#1e236d] transition">
-//               <FaSearch />
-//             </button>
-//           </form>
-
-//           {/* ðŸ‘¤ Right Section */}
-//           <div className="flex items-center gap-3">
-//             {!user ? (
-//               <>
-//                 <span
-//                   onClick={() => navigate("/login")}
-//                   className="cursor-pointer hover:underline transition"
-//                 >
-//                   Sign In
-//                 </span>
-//                 <span>|</span>
-//                 <span
-//                   onClick={() => navigate("/signup")}
-//                   className="cursor-pointer hover:underline transition"
-//                 >
-//                   Registration
-//                 </span>
-
-//                 <button
-//                   onClick={() => navigate("/dashboard/createAd")}
-//                   className="ml-2 bg-[#F4B400] hover:bg-[#e2a500] text-[#1A237E] px-5 py-2 rounded-xl font-semibold transition"
-//                 >
-//                   SELL
-//                 </button>
-//               </>
-//             ) : (
-//               <>
-//                 <button onClick={() => navigate("/dashboard/favorites")} className="bg-white text-[#2E3192] p-2 rounded-full hover:scale-110 transition">
-//                   <Bookmark size={18} />
-//                 </button>
-//                 <button onClick={() => navigate("/chats")} className="bg-white text-[#2E3192] p-2 rounded-full hover:scale-110 transition">
-//                   <MessageSquare size={18} />
-//                 </button>
-//                 <button onClick={() => navigate("/dashboard/notifications")} className="bg-white text-[#2E3192] p-2 rounded-full hover:scale-110 transition">
-//                   <Bell size={18} />
-//                 </button>
-//                 <button onClick={() => navigate("/dashboard")} className="bg-white text-[#2E3192] p-2 rounded-full hover:scale-110 transition">
-//                   <LayoutDashboard size={18} />
-//                 </button>
-
-//                 {/* Avatar Dropdown */}
-//                 <div className="relative">
-//                   <button onClick={toggleDropdown}>{getAvatar()}</button>
-//                   {dropdownOpen && (
-//                     <div className="absolute right-0 top-12 bg-white text-gray-700 shadow-lg rounded-lg w-44 border border-gray-100">
-//                       <ul className="text-sm">
-//                         <li
-//                           onClick={() => {
-//                             navigate("/dashboard/my-ads");
-//                             setDropdownOpen(false);
-//                           }}
-//                           className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-//                         >
-//                           My Ads
-//                         </li>
-//                         <li
-//                           onClick={() => {
-//                             navigate("/dashboard/profile");
-//                             setDropdownOpen(false);
-//                           }}
-//                           className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-//                         >
-//                           Profile
-//                         </li>
-//                         <li
-//                           onClick={handleLogout}
-//                           className="px-4 py-2 text-red-600 hover:bg-gray-100 cursor-pointer"
-//                         >
-//                           Logout
-//                         </li>
-//                       </ul>
-//                     </div>
-//                   )}
-//                 </div>
-
-//                 <button
-//                   onClick={() => navigate("/dashboard/createAd")}
-//                   className="ml-2 bg-[#F4B400] hover:bg-[#e2a500] text-[#1A237E] px-5 py-2 rounded-xl font-semibold transition"
-//                 >
-//                   SELL
-//                 </button>
-//               </>
-//             )}
-//           </div>
-//         </div>
-//       </nav>
-
-//       {/* ðŸŸ¢ Popup Modal for Location */}
-//       <AnimatePresence>
-//         {showPopup && (
-//           <motion.div
-//             initial={{ opacity: 0, scale: 0.9 }}
-//             animate={{ opacity: 1, scale: 1 }}
-//             exit={{ opacity: 0 }}
-//             className="fixed inset-0 bg-black/50 flex justify-center items-center z-50"
-//           >
-//             <div className="bg-white rounded-2xl shadow-xl p-6 w-[90%] md:w-[600px] max-h-[80vh] overflow-y-auto">
-//               <div className="flex justify-between items-center mb-4">
-//                 <h2 className="text-lg font-semibold text-gray-800">
-//                   Select District
-//                 </h2>
-//                 <button onClick={() => setShowPopup(false)}>âœ•</button>
-//               </div>
-//               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-//                 {districts.map((d, idx) => (
-//                   <button
-//                     key={idx}
-//                     onClick={() => handleDistrictClick(d)}
-//                     className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-[#F9B233] hover:text-white rounded-lg transition"
-//                   >
-//                     {d}
-//                   </button>
-//                 ))}
-//               </div>
-//             </div>
-//           </motion.div>
-//         )}
-//       </AnimatePresence>
-//     </>
-//   );
-// };
-
-// export default Navbar;
-//  design navbar  - 1 
-
-
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -370,7 +96,6 @@ const Navbar = () => {
     (user?.email ? user.email.split("@")[0] : "") ||
     "";
 
-  const membershipLabel = String(access?.plan?.name || "FREE").toUpperCase();
   const showMembershipBadge = Boolean(user);
 
   /* =========================
@@ -429,6 +154,7 @@ const Navbar = () => {
             <SearchBar />
           </div>
 
+          <button onClick={() => navigate("/buyer")} className="rounded-full border border-white/25 px-4 py-2 text-sm font-semibold text-white">For Buyers</button>
           {/* DESKTOP RIGHT */}
           <div className="hidden md:flex items-center gap-3">
             {!user ? (
@@ -437,7 +163,7 @@ const Navbar = () => {
                   onClick={() => navigate("/login")}
                   className="text-white font-semibold"
                 >
-                  Login
+                  Seller Login
                 </button>
                 <button
                   onClick={() => navigate("/signup")}
@@ -448,10 +174,10 @@ const Navbar = () => {
               </>
             ) : (
               <>
-                {showMembershipBadge && (
+                {user.accountType === "merchant" && showMembershipBadge && (
                   <button
                     type="button"
-                    onClick={() => navigate("/pricing")}
+                    onClick={() => navigate(user.accountType === "buyer" ? "/buyer/account/cart" : "/dashboard/my-ads")}
                     className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
                       access?.isPremium
                         ? "border-[#f6c96b]/40 bg-[#f6c96b]/12 text-[#f6c96b]"
@@ -459,13 +185,13 @@ const Navbar = () => {
                     }`}
                   >
                     <Sparkles size={14} />
-                    {membershipLabel}
+                    Boost an Ad
                   </button>
                 )}
                 {[
-                  { Icon: Bookmark, onClick: () => navigate("/dashboard/favorites") },
+                  { Icon: Bookmark, onClick: () => navigate(user.accountType === "buyer" ? "/buyer/account/favorites" : "/dashboard/sales") },
                   { Icon: MessageSquare, onClick: () => navigate("/chats") },
-                  { Icon: Bell, onClick: () => navigate("/dashboard") },
+                  { Icon: Bell, onClick: () => navigate(user.accountType === "buyer" ? "/buyer/account/notifications" : "/dashboard/notifications") },
                 ].map(({ Icon, onClick }, i) => (
                   <button
                     key={i}
@@ -491,16 +217,16 @@ const Navbar = () => {
                       >
                         <ul className="text-sm">
                           <li
-                            onClick={() => navigate("/dashboard")}
+                            onClick={() => navigate(user.accountType === "buyer" ? "/buyer/account" : "/dashboard")}
                             className="px-4 py-3 hover:bg-[#2E3192]/10 cursor-pointer flex gap-2"
                           >
                             <User size={16} /> Dashboard
                           </li>
                           <li
-                            onClick={() => navigate("/dashboard/my-ads")}
+                            onClick={() => navigate(user.accountType === "buyer" ? "/buyer/account/cart" : "/dashboard/my-ads")}
                             className="px-4 py-3 hover:bg-[#2E3192]/10 cursor-pointer flex gap-2"
                           >
-                            <Bookmark size={16} /> My Ads
+                            <Bookmark size={16} /> {user.accountType === "buyer" ? "My Cart" : "My Ads"}
                           </li>
                           <li
                             onClick={handleLogout}
@@ -515,11 +241,11 @@ const Navbar = () => {
                 </div>
 
                 <button
-                  onClick={() => navigate("/dashboard/createAd")}
+                  onClick={() => navigate(user.accountType === "buyer" ? "/buyer/account/cart" : "/dashboard/createAd")}
                   className="flex items-center gap-2 bg-[#F4B400] text-[#1A237E] px-5 py-2.5 rounded-full shadow-md hover:bg-[#e2a500] transition"
                 >
                   <PlusCircle size={20} />
-                  Sell
+                  {user.accountType === "buyer" ? "My Cart" : "Sell"}
                 </button>
               </>
             )}
@@ -601,11 +327,6 @@ const Navbar = () => {
                     <p className="text-xs text-gray-500">
                       {user ? user.email || user.phone || "Logged in" : "Not logged in"}
                     </p>
-                    {user && (
-                      <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#2E3192]/70">
-                        {membershipLabel}
-                      </p>
-                    )}
                   </div>
                 </div>
 
@@ -629,16 +350,16 @@ const Navbar = () => {
                 {user ? (
                   <>
                     <button
-                      onClick={() => navigateFromSidebar("/dashboard")}
+                      onClick={() => navigateFromSidebar(user.accountType === "buyer" ? "/buyer/account" : "/dashboard")}
                       className="w-full bg-[#2E3192]/10 text-[#2E3192] py-2 rounded-full"
                     >
                       Dashboard
                     </button>
                     <button
-                      onClick={() => navigateFromSidebar("/dashboard/createAd")}
+                      onClick={() => navigateFromSidebar(user.accountType === "buyer" ? "/buyer/account/cart" : "/dashboard/createAd")}
                       className="w-full bg-[#2E3192] text-white py-2 rounded-full mt-2"
                     >
-                      + Sell Item
+                      {user.accountType === "buyer" ? "My Cart" : "+ Sell Item"}
                     </button>
                     <button
                       onClick={handleLogout}

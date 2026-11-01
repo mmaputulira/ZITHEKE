@@ -162,7 +162,7 @@ const BoostAdSection = () => {
             </h3>
 
             <p className="mt-2 text-white/80">
-              Choose a plan and activate your boost instantly.
+              Choose one of your listed ads, then select the boost plan you want.
             </p>
 
             {/* Price teaser */}
@@ -180,7 +180,7 @@ const BoostAdSection = () => {
             <motion.button
               whileHover={{ boxShadow: "0 0 30px rgba(249,178,51,0.6)" }}
               transition={{ duration: 0.3 }}
-              onClick={() => window.open("/pricing", "_blank", "noopener,noreferrer")}
+              onClick={() => window.open("/dashboard/my-ads", "_blank", "noopener,noreferrer")}
               className="mt-8 w-full flex items-center justify-center gap-2 bg-[#F9B233] text-[#2E3192] font-semibold py-4 rounded-xl shadow-lg"
             >
               Boost Now

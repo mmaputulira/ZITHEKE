@@ -1,3 +1,4 @@
+import { adminRoles, permissionsFor } from "../utils/adminAccess.js";
 import mongoose from "mongoose";
 import Admin from "../models/Admin.js";
 import bcrypt from "bcrypt"; // ✅ bcrypt (NOT bcryptjs)
@@ -23,7 +24,7 @@ export const adminLogin = async (req, res) => {
 
     // 3️⃣ Find admin
     const admin = await Admin.findOne({ email: normalizedEmail });
-    if (!admin) {
+    if (!admin || admin.active === false) {
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",
@@ -44,10 +45,13 @@ export const adminLogin = async (req, res) => {
         {
           id: admin._id,
           email: admin.email,
-          role: "admin", // 🔥 THIS WAS MISSING
+          role: "admin",
+          adminRole: String(admin.role || "admin").toLowerCase(),
+          tokenVersion: admin.tokenVersion || 0,
+          purpose: admin.mustChangePassword ? "password_change" : "admin_access",
         },
         process.env.JWT_SECRET,
-        { expiresIn: "7d" }
+        { expiresIn: admin.mustChangePassword ? "15m" : "7d" }
       );
       
 
@@ -58,7 +62,10 @@ export const adminLogin = async (req, res) => {
       admin: {
         id: admin._id,
         email: admin.email,
-        role: admin.role,
+        name: admin.name || "",
+        phone: admin.phone || "",
+        role: admin.role, roles: adminRoles(admin), permissions: admin.mustChangePassword ? [] : permissionsFor(admin),
+        mustChangePassword: Boolean(admin.mustChangePassword),
       },
     });
   } catch (error) {

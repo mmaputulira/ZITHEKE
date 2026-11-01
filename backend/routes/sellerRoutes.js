@@ -1,3 +1,4 @@
+import { requireMerchant } from "../middlewares/marketplaceAuth.js";
 import express from "express";
 import mongoose from "mongoose";
 
@@ -22,6 +23,7 @@ const router = express.Router();
 router.get(
   "/:sellerId/ads",
   authMiddleware,
+  requireMerchant,
   (req, res, next) => {
     const { sellerId } = req.params;
 

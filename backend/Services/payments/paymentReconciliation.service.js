@@ -27,7 +27,7 @@ const getRuntimeConfig = () => ({
 const createWindowStart = (maxAgeMinutes) =>
   new Date(Date.now() - maxAgeMinutes * 60 * 1000);
 
-const extractAirtelTransactionStatus = (verification = null) =>
+const extractGatewayTransactionStatus = (verification = null) =>
   verification?.rawResponsePayload?.verification?.data?.transaction?.status ||
   verification?.rawResponsePayload?.verification?.transaction?.status ||
   verification?.normalizedResponse?.rawGatewayStatus ||
@@ -36,7 +36,7 @@ const extractAirtelTransactionStatus = (verification = null) =>
 const reconcilePendingPaymentsOnce = async ({ source = "scheduler" } = {}) => {
   if (isRunning) {
     console.info(
-      "Skipping Airtel payment reconciliation because a run is already in progress",
+      "Skipping automatic payment reconciliation because a run is already in progress",
       { source }
     );
     return {
@@ -61,7 +61,7 @@ const reconcilePendingPaymentsOnce = async ({ source = "scheduler" } = {}) => {
   };
 
   isRunning = true;
-  console.info("Starting Airtel payment reconciliation run", {
+  console.info("Starting automatic payment reconciliation run", {
     source,
     batchSize: config.batchSize,
     maxAgeMinutes: config.maxAgeMinutes,
@@ -69,9 +69,12 @@ const reconcilePendingPaymentsOnce = async ({ source = "scheduler" } = {}) => {
   });
 
   try {
+    const automaticGateways = [PAYMENT_GATEWAYS.AIRTEL_MONEY];
+    if (env.NEPG_ENABLED) automaticGateways.push(PAYMENT_GATEWAYS.NEPG);
+
     const pendingPayments = await Payment.find({
       $or: [
-        { gateway: PAYMENT_GATEWAYS.AIRTEL_MONEY },
+        { gateway: { $in: automaticGateways } },
         { paymentMethod: PAYMENT_GATEWAYS.AIRTEL_MONEY },
       ],
       status: { $in: OPEN_PAYMENT_STATUSES },
@@ -100,7 +103,7 @@ const reconcilePendingPaymentsOnce = async ({ source = "scheduler" } = {}) => {
         const finalVerificationStatus = String(
           finalPayment?.verificationStatus || ""
         ).trim();
-        const airtelTransactionStatus = extractAirtelTransactionStatus(
+        const gatewayTransactionStatus = extractGatewayTransactionStatus(
           result?.verification
         );
 
@@ -116,13 +119,13 @@ const reconcilePendingPaymentsOnce = async ({ source = "scheduler" } = {}) => {
           summary.pending += 1;
         }
 
-        console.info("Reconciled Airtel payment", {
+        console.info("Reconciled automatic payment", {
           source,
           paymentId: String(finalPayment?._id || payment._id),
           merchantTransactionId:
             finalPayment?.merchantTransactionId || payment.merchantTransactionId,
           previousPaymentStatus: payment.status,
-          airtelTransactionStatus,
+          gatewayTransactionStatus,
           normalizedStatus: result?.verification?.status || "",
           finalPaymentStatus: finalStatus,
           verificationStatus: finalVerificationStatus,
@@ -135,7 +138,7 @@ const reconcilePendingPaymentsOnce = async ({ source = "scheduler" } = {}) => {
       } catch (error) {
         summary.errors += 1;
 
-        console.error("Pending Airtel payment reconciliation failed", {
+        console.error("Pending automatic payment reconciliation failed", {
           source,
           paymentId: String(payment._id),
           merchantTransactionId: payment.merchantTransactionId,
@@ -155,7 +158,7 @@ const reconcilePendingPaymentsOnce = async ({ source = "scheduler" } = {}) => {
       }
     }
 
-    console.info("Completed Airtel payment reconciliation run", {
+    console.info("Completed automatic payment reconciliation run", {
       source,
       checked: summary.checked,
       paid: summary.paid,
@@ -174,24 +177,24 @@ const startPaymentReconciliationScheduler = () => {
   const config = getRuntimeConfig();
 
   if (!config.enabled) {
-    console.info("Airtel payment reconciliation scheduler is disabled");
+    console.info("Automatic payment reconciliation scheduler is disabled");
     return false;
   }
 
   if (reconciliationTimer) {
-    console.info("Airtel payment reconciliation scheduler is already running");
+    console.info("Automatic payment reconciliation scheduler is already running");
     return true;
   }
 
   reconciliationTimer = setInterval(() => {
     reconcilePendingPaymentsOnce({ source: "scheduler" }).catch((error) => {
-      console.error("Airtel payment reconciliation scheduler run failed", {
+      console.error("Automatic payment reconciliation scheduler run failed", {
         message: error?.message || "Unknown scheduler error",
       });
     });
   }, config.intervalMs);
 
-  console.info("Airtel payment reconciliation scheduler started", {
+  console.info("Automatic payment reconciliation scheduler started", {
     intervalMs: config.intervalMs,
   });
   return true;
@@ -201,7 +204,7 @@ const stopPaymentReconciliationScheduler = () => {
   if (!reconciliationTimer) return false;
   clearInterval(reconciliationTimer);
   reconciliationTimer = null;
-  console.info("Airtel payment reconciliation scheduler stopped");
+  console.info("Automatic payment reconciliation scheduler stopped");
   return true;
 };
 

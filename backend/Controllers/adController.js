@@ -1,7 +1,13 @@
+import { activeMerchantUids } from "../Services/publicMerchants.service.js";
+import { assertMerchantUid } from "../Services/marketplaceIdentity.service.js";
+import { isPurchasable } from "../utils/marketplacePolicy.js";
+import { expireActiveAdBoostForSale } from "../Services/payments/subscriptionExpiry.service.js";
 import mongoose from "mongoose";
 import fs from "fs/promises";
 import path from "path";
 import Ad from "../models/Ad.js";
+import Subscription from "../models/Subscription.js";
+import { SUBSCRIPTION_STATUSES } from "../constants/subscriptionStatuses.js";
 import User from "../models/User.js";
 import Conversation from "../models/Conversation.js";
 import Message from "../models/Message.js";
@@ -17,6 +23,43 @@ import {
 
 const normalizePhone = (raw = "") => normalizeMalawiPhone(raw);
 const isValidPhone = (phone) => isValidMalawiPhone(phone);
+const escapeRegex = (value = "") =>
+  String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const PROTECTED_AD_FIELDS = new Set([
+  "_id",
+  "__v",
+  "ownerUid",
+  "reservedOrderId",
+  "userId",
+  "ownerName",
+  "ownerEmail",
+  "ownerPhone",
+  "status",
+  "featured",
+  "boostSubscriptionId",
+  "boostPaymentId",
+  "boostStartDate",
+  "boostEndDate",
+  "expiryDate",
+  "reported",
+  "reportReason",
+  "rejectionReason",
+  "views",
+  "favouritesCount",
+  "viewedBy",
+  "deletedAt",
+  "deletedBy",
+  "createdAt",
+  "updatedAt",
+]);
+
+const stripProtectedAdFields = (payload = {}) => {
+  for (const key of PROTECTED_AD_FIELDS) {
+    delete payload[key];
+  }
+  return payload;
+};
 const parseArrayField = (value) => {
   if (Array.isArray(value)) return value.filter(Boolean);
   if (typeof value !== "string" || !value.trim()) return [];
@@ -162,36 +205,43 @@ const optimizeListingCopy = async ({ title, description, category }) => {
 ================================ */
 export const createAd = async (req, res) => {
   try {
-    // 1️⃣ Clone body (DO NOT destructure)
-    const body = { ...req.body };
-    delete body.featured;
+    const authenticatedUid = req.user?.uid;
+    if (!authenticatedUid) {
+      return res.status(401).json({ success: false, message: "Login required." });
+    }
 
-    console.log("REQ BODY 🔥", body);
+    // The authenticated session is authoritative. Never trust ownership,
+    // moderation, boost or analytics fields supplied by the browser.
+    const body = stripProtectedAdFields({ ...req.body });
+    body.ownerUid = authenticatedUid;
+    body.userId = authenticatedUid;
 
-    // 2️⃣ Required fields check
-    if (!body.ownerUid || !body.title || !body.description || !body.category) {
+    if (!body.title || !body.description || !body.category) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields",
+        message: "Title, description and category are required.",
       });
     }
 
-    // 3️⃣ Remove empty values (SAFE CLEANUP)
     Object.keys(body).forEach((key) => {
       if (body[key] === "" || body[key] === null || body[key] === undefined) {
         delete body[key];
       }
     });
 
-    // 4️⃣ Fetch owner details if missing
-    if (!body.ownerName || !body.ownerEmail || !body.ownerPhone) {
-      const user = await User.findOne({ uid: body.ownerUid });
-      if (user) {
-        body.ownerName = body.ownerName || user.name;
-        body.ownerEmail = body.ownerEmail || user.email;
-        body.ownerPhone = body.ownerPhone || user.phone;
-      }
+    const owner = await User.findOne({ uid: authenticatedUid }).select(
+      "name email phone status"
+    );
+    if (!owner || ["Suspended", "Inactive"].includes(owner.status)) {
+      return res.status(403).json({
+        success: false,
+        message: "This account cannot publish listings.",
+      });
     }
+
+    body.ownerName = owner.name || "";
+    body.ownerEmail = owner.email || "";
+    body.ownerPhone = owner.phone || body.ownerPhone || "";
 
     // 4.5️⃣ Ensure owner phone exists + Malawi format
     if (!body.ownerPhone) {
@@ -445,7 +495,7 @@ export const getUserAds = async (req, res) => {
       filters.status = trimmedStatus;
     }
     if (trimmedQuery) {
-      filters.title = { $regex: trimmedQuery, $options: "i" };
+      filters.title = { $regex: escapeRegex(trimmedQuery), $options: "i" };
     }
 
     let sortStage = { createdAt: -1 };
@@ -533,7 +583,7 @@ export const getUserAds = async (req, res) => {
       message: error?.message,
       stack: error?.stack,
     });
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(error.statusCode || 500).json({ message: error.statusCode ? error.message : "Server error" });
   }
 };
 
@@ -549,9 +599,11 @@ export const getUserAds = async (req, res) => {
 export const getPromoAds = async (req, res) => {
   try {
     const { category, limit = 3 } = req.query;
+    const normalizedLimit = Math.min(Math.max(parseInt(limit, 10) || 3, 1), 24);
 
     const filters = {
-      status: { $in: ["Approved", "Active"] },
+      status: "Approved",
+      ownerUid:{ $in:await activeMerchantUids() },
       featured: true,
     };
 
@@ -561,7 +613,7 @@ export const getPromoAds = async (req, res) => {
 
       const ads = await Ad.find(filters)
         .sort({ createdAt: -1 }) // latest featured first
-        .limit(Number(limit))
+        .limit(normalizedLimit)
        .select(
     "_id title price images condition category city location ownerName negotiable"
   );
@@ -590,62 +642,100 @@ export const getAllAds = async (req, res) => {
     let {
       q = "",
       location = "",
-      category,
+      category = "",
+      subcategory = "",
+      sort = "newest",
       page = 1,
       limit = 20,
     } = req.query;
 
-    q = q.trim();
-    location = location.trim();
+    q = String(q || "").trim();
+    location = String(location || "").trim();
+    category = String(category || "").trim();
+    subcategory = String(subcategory || "").trim();
 
-    const filters = {
-      status: { $in: ["Approved", "Active"] },
-    };
+    const normalizedPage = Math.max(parseInt(page, 10) || 1, 1);
+    const normalizedLimit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 80);
+    const skip = (normalizedPage - 1) * normalizedLimit;
+
+    const filters = { status: "Approved", ownerUid:{ $in:await activeMerchantUids() } };
 
     if (location) {
-      filters.city = { $regex: `^${location}`, $options: "i" };
-    }
-
-    if (category) {
-      filters.category = category;
-    }
-
-    if (q) {
+      const safeLocation = escapeRegex(location);
       filters.$or = [
-        { title: { $regex: q, $options: "i" } },
-        { description: { $regex: q, $options: "i" } },
-        { category: { $regex: q, $options: "i" } },
-        { subcategory: { $regex: q, $options: "i" } },
+        { city: { $regex: safeLocation, $options: "i" } },
+        { location: { $regex: safeLocation, $options: "i" } },
+        { state: { $regex: safeLocation, $options: "i" } },
       ];
     }
 
-    const skip = (page - 1) * limit;
+    if (category) {
+      filters.category = {
+        $regex: `^${escapeRegex(category)}$`,
+        $options: "i",
+      };
+    }
+
+    if (subcategory) {
+      filters.subcategory = {
+        $regex: `^${escapeRegex(subcategory)}$`,
+        $options: "i",
+      };
+    }
+
+    if (q) {
+      const safeQuery = escapeRegex(q);
+      const searchFilters = [
+        { title: { $regex: safeQuery, $options: "i" } },
+        { description: { $regex: safeQuery, $options: "i" } },
+        { category: { $regex: safeQuery, $options: "i" } },
+        { subcategory: { $regex: safeQuery, $options: "i" } },
+        { tags: { $regex: safeQuery, $options: "i" } },
+      ];
+      if (filters.$or) {
+        filters.$and = [{ $or: filters.$or }, { $or: searchFilters }];
+        delete filters.$or;
+      } else {
+        filters.$or = searchFilters;
+      }
+    }
+
+    const sortMap = {
+      newest: { featured: -1, createdAt: -1 },
+      oldest: { createdAt: 1 },
+      price_asc: { price: 1, createdAt: -1 },
+      price_desc: { price: -1, createdAt: -1 },
+      popular: { views: -1, favouritesCount: -1, createdAt: -1 },
+    };
+    const sortBy = sortMap[String(sort || "").toLowerCase()] || sortMap.newest;
 
     const [ads, total] = await Promise.all([
       Ad.find(filters)
-        .sort({ createdAt: -1 })
+        .sort(sortBy)
         .skip(skip)
-        .limit(limit)
+        .limit(normalizedLimit)
         .select(
-          "title description price images category subcategory " +
-            "city location state " +
-            "ownerName status views favouritesCount negotiable featured createdAt " +
+          "title description price currency images category subcategory " +
+            "city location state ownerUid ownerName status views favouritesCount negotiable featured createdAt " +
             "condition brand model storage year mileage fuelType warranty " +
-            " partName partCategory originalType workingStatus accessoryType vehicleType accessoryCondition " +
-            "bedrooms bathrooms area furnishing floorNumber totalFloors parking washroom roomType plotArea plotType facing  " +
-            "salary experience company quantity seedType variety fertilizerType form pesticideType targetCrop toolName powerType serviceType availability serviceArea sportType weight brand " +
-            "size color type " +
-            "age breed gender " +
-            "fileType accessType"
+            "partName partCategory originalType workingStatus accessoryType vehicleType accessoryCondition " +
+            "bedrooms bathrooms area furnishing floorNumber totalFloors parking washroom roomType plotArea plotType facing " +
+            "salary experience company quantity seedType variety fertilizerType form pesticideType targetCrop toolName powerType serviceType availability serviceArea sportType weight " +
+            "size color type age breed gender fileType accessType"
         ),
       Ad.countDocuments(filters),
     ]);
 
+    const pages = Math.max(1, Math.ceil(total / normalizedLimit));
     res.status(200).json({
       success: true,
+      count: ads.length,
       total,
-      page,
-      pages: Math.ceil(total / limit),
+      page: normalizedPage,
+      limit: normalizedLimit,
+      pages,
+      totalPages: pages,
+      hasMore: normalizedPage < pages,
       ads,
     });
   } catch (err) {
@@ -660,14 +750,14 @@ export const getAllAds = async (req, res) => {
 ================================ */
 export const updateAd = async (req, res) => {
   try {
-    const updates = { ...req.body };
-    delete updates.featured;
+    const updates = stripProtectedAdFields({ ...req.body });
     const MAX_IMAGES = 5;
     const existingAd = await Ad.findById(req.params.id);
     if (!existingAd) {
       return res.status(404).json({ message: "Ad not found" });
     }
 
+    if (existingAd.reservedOrderId) return res.status(409).json({ message:"This listing has a reserved purchase. Manage it in Sales Orders before editing." });
     if (Object.prototype.hasOwnProperty.call(updates, "condition")) {
       const normalizedCondition = normalizeConditionInput(updates.condition);
       if (!normalizedCondition.ok) {
@@ -803,6 +893,12 @@ export const deleteAd = async (req, res) => {
     const ad = await Ad.findById(req.params.id);
     if (!ad) return res.status(404).json({ message: "Ad not found" });
 
+    const session = await mongoose.startSession();
+    try { await session.withTransaction(async () => {
+      const removed = await Ad.findOneAndUpdate({_id:ad._id,reservedOrderId:null},{ $set:{status:"deleted",deletedAt:new Date(),deletedBy:req.user.uid,featured:false,boostSubscriptionId:null,boostPaymentId:null,boostStartDate:null,boostEndDate:null} },{session});
+      if(!removed)throw Object.assign(new Error("Cancel or complete the reserved purchase before deleting."),{statusCode:409});
+      await expireActiveAdBoostForSale({adId:ad._id,ownerUid:ad.ownerUid,session});
+    }); } finally { await session.endSession(); }
     // Best-effort local file cleanup for local uploads only.
     if (Array.isArray(ad.images)) {
       for (const imgUrl of ad.images) {
@@ -826,7 +922,7 @@ export const deleteAd = async (req, res) => {
       if (localVideoPath) await fs.unlink(localVideoPath).catch(() => {});
     }
 
-    await ad.deleteOne();
+    // Soft deletion retains listing references for historical orders.
     res.status(200).json({ message: "Ad deleted successfully" });
   } catch (error) {
     console.error("Error deleting ad:", error);
@@ -842,8 +938,14 @@ export const markAsSold = async (req, res) => {
     const ad = await Ad.findById(req.params.id);
     if (!ad) return res.status(404).json({ message: "Ad not found" });
 
-    ad.status = "Sold";
-    await ad.save();
+    if (ad.reservedOrderId) return res.status(409).json({ message: "Complete or cancel the reserved purchase in Sales Orders first." });
+    const session = await mongoose.startSession();
+    try { await session.withTransaction(async () => {
+      const sold = await Ad.findOneAndUpdate({ _id:ad._id, reservedOrderId:null }, { $set:{ status:"Sold", featured:false, boostSubscriptionId:null, boostPaymentId:null, boostStartDate:null, boostEndDate:null } }, { session });
+      if (!sold) throw Object.assign(new Error("This listing has a reserved purchase."), { statusCode:409 });
+      await expireActiveAdBoostForSale({ adId:ad._id, ownerUid:ad.ownerUid, session });
+    }); } finally { await session.endSession(); }
+    ad.status = "Sold"; ad.featured = false;
 
     res.status(200).json({ message: "Ad marked as sold", ad });
   } catch (error) {
@@ -858,35 +960,33 @@ export const markAsSold = async (req, res) => {
 export const enableFeaturedAd = async (req, res) => {
   try {
     const ad = req.ad;
-    if (!ad) {
-      return res.status(404).json({ message: "Ad not found" });
-    }
+    if (!ad) return res.status(404).json({ message: "Ad not found" });
+    if (ad.status !== "Approved") return res.status(409).json({ message: "Only approved listings can be featured." });
 
-    if (ad.featured) {
-      return res.status(200).json({
-        success: true,
-        message: "Ad is already featured",
-        ad,
-        access: req.membershipAccess || null,
+    const activeBoost = await Subscription.findOne({
+      adId: ad._id,
+      status: SUBSCRIPTION_STATUSES.ACTIVE,
+      endDate: { $gt: new Date() },
+    }).populate("planId").populate("paymentId");
+
+    if (!activeBoost) {
+      return res.status(409).json({
+        success: false,
+        message: "This advert does not have an active paid boost. Choose a boost plan and complete payment first.",
       });
     }
 
     ad.featured = true;
+    ad.boostSubscriptionId = activeBoost._id;
+    ad.boostPaymentId = activeBoost.paymentId?._id || activeBoost.paymentId || null;
+    ad.boostStartDate = activeBoost.startDate || activeBoost.activatedAt || new Date();
+    ad.boostEndDate = activeBoost.endDate;
     await ad.save();
 
-    return res.status(200).json({
-      success: true,
-      message: "Ad featured successfully",
-      ad,
-      access: req.membershipAccess || null,
-    });
+    return res.status(200).json({ success: true, message: "Ad boost activated", ad, subscription: activeBoost });
   } catch (error) {
     console.error("Error enabling featured ad:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Server error while enabling featured ad",
-      error: error.message,
-    });
+    return res.status(500).json({ success: false, message: "Server error while enabling featured ad", error: error.message });
   }
 };
 
@@ -1025,20 +1125,30 @@ export const changeAdStatus = async (req, res) => {
 ================================ */
 export const getAdById = async (req, res) => {
   try {
-    const ad = await Ad.findById(req.params.id);
-    if (!ad) return res.status(404).json({ message: "Ad not found" });
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid advert ID" });
+    }
+
+    // Public listing pages must never expose pending/rejected/moderated adverts.
+    const ad = await Ad.findOne({
+      _id: req.params.id,
+      status: { $in: ["Approved", "Sold"] },
+    });
+    if (!ad) return res.status(404).json({ message: "Advert not found" });
+    await assertMerchantUid(ad.ownerUid);
 
     const seller = await User.findOne({ uid: ad.ownerUid }).select(
-      "name email phone"
+      "name phone photoURL city location verified createdAt"
     );
 
     res.status(200).json({
       ...ad.toObject(),
+      canPurchase:isPurchasable(ad) && !ad.reservedOrderId,
       seller: seller || null,
     });
   } catch (error) {
     console.error("Error fetching ad:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(error.statusCode || 500).json({ message: error.statusCode ? error.message : "Server error" });
   }
 };
 
@@ -1072,25 +1182,56 @@ export const updateFavoriteCount = async (req, res) => {
 ================================ */
 export const searchAds = async (req, res) => {
   try {
-    const { query, location } = req.query;
+    let { query = "", location = "", page = 1, limit = 20 } = req.query;
+    query = String(query || "").trim();
+    location = String(location || "").trim();
+    const normalizedPage = Math.max(parseInt(page, 10) || 1, 1);
+    const normalizedLimit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 50);
 
-    const filters = {
-      $or: [
-        { title: { $regex: query, $options: "i" } },
-        { description: { $regex: query, $options: "i" } },
-        { category: { $regex: query, $options: "i" } },
-        { subcategory: { $regex: query, $options: "i" } },
-      ],
-    };
-
-    if (location && location !== "All Malawi") {
-      filters.city = { $regex: location, $options: "i" };
+    const filters = { status: "Approved", ownerUid:{ $in:await activeMerchantUids() } };
+    if (query) {
+      const safeQuery = escapeRegex(query);
+      filters.$or = [
+        { title: { $regex: safeQuery, $options: "i" } },
+        { description: { $regex: safeQuery, $options: "i" } },
+        { category: { $regex: safeQuery, $options: "i" } },
+        { subcategory: { $regex: safeQuery, $options: "i" } },
+        { tags: { $regex: safeQuery, $options: "i" } },
+      ];
     }
 
-    const ads = await Ad.find(filters).sort({ createdAt: -1 });
-    res.json(ads);
+    if (location && location !== "All Malawi") {
+      const safeLocation = escapeRegex(location);
+      filters.$and = [
+        ...(filters.$and || []),
+        {
+          $or: [
+            { city: { $regex: safeLocation, $options: "i" } },
+            { location: { $regex: safeLocation, $options: "i" } },
+            { state: { $regex: safeLocation, $options: "i" } },
+          ],
+        },
+      ];
+    }
+
+    const [ads, total] = await Promise.all([
+      Ad.find(filters)
+        .sort({ featured: -1, createdAt: -1 })
+        .skip((normalizedPage - 1) * normalizedLimit)
+        .limit(normalizedLimit),
+      Ad.countDocuments(filters),
+    ]);
+
+    res.json({
+      success: true,
+      ads,
+      total,
+      page: normalizedPage,
+      totalPages: Math.max(1, Math.ceil(total / normalizedLimit)),
+    });
   } catch (error) {
     console.error("Search error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Search is temporarily unavailable." });
   }
 };
+

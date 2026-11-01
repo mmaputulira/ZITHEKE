@@ -1,3 +1,4 @@
+import { validateEngagement } from "../Services/marketplaceIdentity.service.js";
 // controllers/conversationController.js
 import Conversation from "../models/Conversation.js";
 import Message from "../models/Message.js";
@@ -171,8 +172,16 @@ export const markConversationRead = async (req, res) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
+    const conversation = await Conversation.findOne({
+      _id: conversationId,
+      participants: uid,
+    }).select("_id participants");
+    if (!conversation) return res.status(404).json({ message: "Conversation not found" });
+
+    const readAt = new Date();
+    const otherUid = conversation.participants.find((participant) => participant !== uid);
     await Conversation.updateOne(
-      { _id: conversationId },
+      { _id: conversationId, participants: uid },
       { $set: { [`unreadCounts.${uid}`]: 0 } }
     );
 
@@ -184,11 +193,19 @@ export const markConversationRead = async (req, res) => {
       },
       {
         isRead: true,
-        readAt: new Date(),
+        readAt,
       }
     );
 
-    res.json({ success: true });
+    if (otherUid) {
+      req.io?.to(otherUid).emit("message:read", {
+        conversationId: String(conversation._id),
+        readAt,
+        readBy: uid,
+      });
+    }
+
+    res.json({ success: true, readAt });
   } catch (err) {
     console.error("❌ Error marking conversation read:", err);
     res.status(500).json({ message: "Error marking conversation read" });
@@ -206,6 +223,7 @@ export const startConversation = async (req, res) => {
       return res.status(403).json({ message: "Access denied" });
     }
 
+    const engagement = await validateEngagement({ senderId, receiverId, adId });
     let convo = await Conversation.findOne({
       participants: { $all: [senderId, receiverId] },
       adId: adId || null,
@@ -216,8 +234,8 @@ export const startConversation = async (req, res) => {
         participants: [senderId, receiverId],
 
         adId: adId || null,
-        productTitle: adTitle || "Listing",
-        productImage: adImage || "",
+        productTitle: engagement.ad?.title || "Merchant enquiry",
+        productImage: engagement.ad?.images?.[0] || "",
 
         unreadCounts: {
           [senderId]: 0,
@@ -231,7 +249,7 @@ export const startConversation = async (req, res) => {
     res.json(convo);
   } catch (err) {
     console.error("❌ Error starting conversation:", err);
-    res.status(500).json({ error: "Failed to start conversation" });
+    res.status(err.statusCode || 500).json({ error: err.statusCode ? err.message : "Failed to start conversation" });
   }
 };
 

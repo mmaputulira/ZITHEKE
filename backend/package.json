@@ -15,7 +15,17 @@
     "prices:mpgs-test": "node scripts/set-mpgs-test-prices.js",
     "prices:mpgs-test:revert": "node scripts/set-mpgs-test-prices.js --revert",
     "sync:subscription-expiry": "node scripts/runSubscriptionExpirySync.js",
-    "reset:revenue-subscriptions": "node scripts/resetRevenueSubscriptionsTestData.js"
+    "reset:revenue-subscriptions": "node scripts/resetRevenueSubscriptionsTestData.js",
+    "db:test": "node scripts/testMongoConnection.js",
+    "backfill:payment-references": "node scripts/backfillPaymentReferences.js",
+    "migrate:ad-specific-boosts": "node scripts/migrate-ad-specific-boosts.js",
+    "backfill:boost-performance": "node scripts/backfill-boost-performance-baseline.js",
+    "migrate:seller-membership-index": "node scripts/ensure-seller-membership-index.js",
+    "test": "node --test tests/marketplace.test.js",
+    "migrate:marketplace": "node scripts/migrate-marketplace-accounts.js",
+    "assign:staff": "node scripts/assign-zitheke-staff.js",
+    "provision:staff": "node scripts/provision-zitheke-staff.js",
+    "sync:seller-profile-boosts": "node scripts/sync-seller-profile-boosts.js"
   },
   "dependencies": {
     "axios": "^1.13.2",
@@ -40,9 +50,10 @@
     "zod": "^4.2.1"
   },
   "devDependencies": {
+    "mongodb-memory-server": "^11.3.0",
     "nodemon": "^3.1.10"
   },
-  "description": "��#\u0000 \u0000M\u0000y\u0000 \u0000B\u0000a\u0000c\u0000k\u0000e\u0000n\u0000d\u0000 \u0000P\u0000r\u0000o\u0000j\u0000e\u0000c\u0000t\u0000\r\u0000 \u0000",
+  "description": "Zitheke marketplace backend API and payment services",
   "keywords": [],
   "author": "",
   "license": "ISC"

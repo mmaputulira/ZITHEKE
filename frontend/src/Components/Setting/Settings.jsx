@@ -83,12 +83,12 @@ const Settings = () => {
         body: JSON.stringify({ otp: otp.trim() }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.message || "OTP verification failed");
+      if (!res.ok) throw new Error(json?.message || "The code could not be confirmed");
       setMessage(json?.message || "Phone verified");
       setOtp("");
       loadSettings();
     } catch (err) {
-      setError(err.message || "OTP verification failed");
+      setError(err.message || "The code could not be confirmed");
     }
   };
 

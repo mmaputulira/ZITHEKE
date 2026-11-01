@@ -1,3 +1,4 @@
+import { publicAccount } from "../utils/marketplacePolicy.js";
 // Controllers/passwordAuth.controller.js
 import bcrypt from "bcrypt";
 import crypto from "crypto";
@@ -22,17 +23,7 @@ const EMAIL_RESET_OTP_TTL_MINUTES = 10;
 const EMAIL_RESET_SESSION_TTL_MINUTES = 15;
 const EMAIL_RESET_MAX_ATTEMPTS = 5;
 
-const sanitizeUser = (user) => ({
-  uid: user.uid,
-  name: user.name,
-  email: user.email,
-  phone: user.phone,
-  role: user.role,
-  authProvider: user.authProvider,
-  phoneVerified: user.phoneVerified,
-  emailVerified: user.emailVerified,
-  photoURL: user.photoURL || "",
-});
+const sanitizeUser = publicAccount;
 
 const hasPasswordAuth = (user) => {
   const providers = Array.isArray(user.authProviders) ? user.authProviders : [];
@@ -104,7 +95,8 @@ const verifyTurnstile = async ({ token, ip }) => {
 export const PasswordAuthController = {
   async signup(req, res) {
     try {
-      const { name, email, phone, password } = req.body || {};
+      const { name, email, phone, password, accountType = "merchant" } = req.body || {};
+      if (!["buyer", "merchant"].includes(accountType)) return res.status(400).json({ message: "Invalid account type" });
 
       if (!name || !email || !phone || !password) {
         return res.status(400).json({
@@ -143,6 +135,7 @@ export const PasswordAuthController = {
 
       const user = await User.create({
         uid: `local_${crypto.randomUUID()}`,
+        accountType, merchantStatus: accountType === "merchant" ? "active" : "pending",
         name: String(name).trim(),
         email: emailLower,
         phone: normalizedPhone,
@@ -175,9 +168,9 @@ export const PasswordAuthController = {
       });
     } catch (error) {
       console.error("? Signup error:", error);
-      return res.status(500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
-        message: "Server error",
+        message: error.statusCode ? error.message : "Server error",
       });
     }
   },
@@ -369,7 +362,7 @@ export const PasswordAuthController = {
       });
     } catch (error) {
       console.error("? Login error:", error);
-      return res.status(500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         message: "Server error",
       });
@@ -462,7 +455,7 @@ export const PasswordAuthController = {
       });
     } catch (error) {
       console.error("? OTP verify error:", error);
-      return res.status(500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         message: "Server error",
       });
@@ -530,7 +523,7 @@ export const PasswordAuthController = {
       });
     } catch (error) {
       console.error("Forgot password OTP request error:", error);
-      return res.status(500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         message: "Server error",
       });
@@ -619,7 +612,7 @@ export const PasswordAuthController = {
       });
     } catch (error) {
       console.error("Forgot password OTP verify error:", error);
-      return res.status(500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         message: "Server error",
       });
@@ -684,7 +677,7 @@ export const PasswordAuthController = {
       });
     } catch (error) {
       console.error("Forgot password reset error:", error);
-      return res.status(500).json({
+      return res.status(error.statusCode || 500).json({
         success: false,
         message: "Server error",
       });

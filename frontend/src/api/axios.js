@@ -1,4 +1,4 @@
-﻿import axios from "axios";
+import axios from "axios";
 import Swal from "sweetalert2";
 
 let authAlertShown = false;
@@ -12,7 +12,7 @@ const api = axios.create({
   },
 });
 
-/* dY"? REQUEST INTERCEPTOR */
+/* REQUEST INTERCEPTOR */
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -35,7 +35,7 @@ api.interceptors.request.use(
   }
 );
 
-/* ƒ?O RESPONSE INTERCEPTOR (optional but useful) */
+/* RESPONSE INTERCEPTOR */
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -68,6 +68,7 @@ api.interceptors.response.use(
 
         if (newToken) localStorage.setItem("token", newToken);
         if (newRefresh) localStorage.setItem("refreshToken", newRefresh);
+        if(res.data?.user) { localStorage.setItem("authUser",JSON.stringify(res.data.user)); window.dispatchEvent(new CustomEvent("account-updated",{detail:res.data.user})); }
 
         refreshQueue.forEach((p) => p.resolve(newToken));
         refreshQueue = [];
@@ -79,7 +80,7 @@ api.interceptors.response.use(
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
         if (window.location.pathname !== "/login") {
-          window.location.href = "/login";
+          window.location.href = window.location.pathname.startsWith("/buyer") ? "/buyer/login" : "/login";
         }
         return Promise.reject(err);
       } finally {
@@ -88,27 +89,37 @@ api.interceptors.response.use(
     }
 
     if (status === 403) {
-      console.warn("Forbidden - access denied");
+      const message = String(
+        error.response?.data?.message || "You do not have permission to do that."
+      );
+      const accountBlocked = /suspended|inactive|account unavailable/i.test(message);
+
       if (!authAlertShown) {
         authAlertShown = true;
         Swal.fire({
-          icon: "warning",
-          title: "Access denied",
-          text: "Please login again.",
+          icon: accountBlocked ? "warning" : "info",
+          title: accountBlocked ? "Account unavailable" : "Action not available",
+          text: message,
           toast: true,
           position: "top",
-          timer: 2000,
+          timer: 2600,
           showConfirmButton: false,
           timerProgressBar: true,
         });
         setTimeout(() => {
           authAlertShown = false;
-        }, 2500);
+        }, 3000);
       }
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
+
+      // A normal forbidden action must not sign the customer out. Only an
+      // account-level block invalidates the local session immediately.
+      if (accountBlocked) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("authUser");
+        if (window.location.pathname !== "/login") {
+          window.location.href = window.location.pathname.startsWith("/buyer") ? "/buyer/login" : "/login";
+        }
       }
     }
 

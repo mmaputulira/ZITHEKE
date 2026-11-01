@@ -1,7 +1,8 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Send, Smile, Paperclip, X, Loader2, Search } from "lucide-react";
+import Swal from "sweetalert2";
 
-/* âœ… Color system (CSS vars)
+/* ✅ Color system (CSS vars)
    You can also move these vars to your global CSS if you want.
 */
 const CHAT_VARS = {
@@ -12,17 +13,17 @@ const CHAT_VARS = {
 };
 
 const EMOJI_CATEGORIES = [
-  { key: "faces", label: "ðŸ™‚" },
-  { key: "gestures", label: "ðŸ‘" },
-  { key: "symbols", label: "â¤ï¸" },
-  { key: "celebration", label: "ðŸŽ‰" },
+  { key: "faces", label: "🙂" },
+  { key: "gestures", label: "👍" },
+  { key: "symbols", label: "❤️" },
+  { key: "celebration", label: "🎉" },
 ];
 
 const EMOJIS = {
-  faces: ["ðŸ˜€", "ðŸ˜", "ðŸ˜‚", "ðŸ¤£", "ðŸ˜Š", "ðŸ˜", "ðŸ˜˜", "ðŸ˜Ž", "ðŸ˜¢", "ðŸ˜¡", "ðŸ˜­", "ðŸ˜´", "ðŸ˜…", "ðŸ¤©", "ðŸ¤”", "ðŸ˜‡", "ðŸ˜œ", "ðŸ¤—", "ðŸ¥³"],
-  gestures: ["ðŸ‘", "ðŸ‘Ž", "ðŸ™", "ðŸ™Œ", "ðŸ¤", "ðŸ‘Œ"],
-  symbols: ["ðŸ”¥", "â¤ï¸", "ðŸ’”", "âœ¨"],
-  celebration: ["ðŸŽ‰"],
+  faces: ["😀", "😁", "😂", "🤣", "😊", "😍", "😘", "😎", "😢", "😡", "😭", "😴", "😅", "🤩", "🤔", "😇", "😜", "🤗", "🥳"],
+  gestures: ["👍", "👎", "🙏", "🙌", "🤝", "👌"],
+  symbols: ["🔥", "❤️", "💔", "✨"],
+  celebration: ["🎉"],
 };
 
 const QUICK_MESSAGES = [
@@ -59,13 +60,13 @@ const ChatInput = ({ value, onChange, onSend }) => {
   const barRef = useRef(null);
 
   /* =====================================================
-     â™¿ Accessibility helpers
+     ♿ Accessibility helpers
   ===================================================== */
   const focusRing =
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--chat-accent)] focus-visible:ring-offset-white";
 
   /* =====================================================
-     ðŸ”’ Close emoji popover on outside click / ESC
+     🔒 Close emoji popover on outside click / ESC
   ===================================================== */
   useEffect(() => {
     const onDown = (e) => {
@@ -91,7 +92,7 @@ const ChatInput = ({ value, onChange, onSend }) => {
   }, [showEmoji]);
 
   /* =====================================================
-     ðŸ§¼ Clean preview URL on unmount / change
+     🧼 Clean preview URL on unmount / change
   ===================================================== */
   useEffect(() => {
     return () => {
@@ -100,7 +101,7 @@ const ChatInput = ({ value, onChange, onSend }) => {
   }, [previewUrl]);
 
   /* =====================================================
-     ðŸ˜„ Emoji list (search + tabs)
+     😄 Emoji list (search + tabs)
   ===================================================== */
   const emojiList = useMemo(() => {
     const all = Object.entries(EMOJIS).flatMap(([cat, arr]) =>
@@ -137,7 +138,7 @@ const ChatInput = ({ value, onChange, onSend }) => {
   };
 
   /* =====================================================
-     FILE SELECT â†’ PREVIEW
+     FILE SELECT → PREVIEW
   ===================================================== */
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
@@ -190,7 +191,7 @@ const ChatInput = ({ value, onChange, onSend }) => {
       setPreviewUrl("");
     } catch (err) {
       console.error("Upload error:", err);
-      alert("Upload failed!");
+      await Swal.fire({ icon: "error", title: "Upload failed", text: "We could not upload this attachment. Please try again.", confirmButtonColor: "#2E3192" });
     }
 
     setUploading(false);
@@ -198,8 +199,8 @@ const ChatInput = ({ value, onChange, onSend }) => {
 
   /* =====================================================
      SEND TEXT
-     âœ… Press Enter to send
-     âœ… Shift+Enter -> newline
+     ✅ Press Enter to send
+     ✅ Shift+Enter -> newline
   ===================================================== */
   const sendText = () => {
     if (!value.trim()) return;
@@ -253,7 +254,7 @@ const ChatInput = ({ value, onChange, onSend }) => {
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
-      {/* âœ… Floating input bar container */}
+      {/* ✅ Floating input bar container */}
       <div
         ref={barRef}
         className="relative mx-1.5 sm:mx-4 mb-2 sm:mb-3"
@@ -357,7 +358,7 @@ const ChatInput = ({ value, onChange, onSend }) => {
                     {uploading ? (
                       <>
                         <Loader2 size={16} className="animate-spin" />
-                        Uploadingâ€¦
+                        Uploading…
                       </>
                     ) : (
                       "Send"
@@ -426,7 +427,7 @@ const ChatInput = ({ value, onChange, onSend }) => {
               {/* Typing support hint */}
               <div className="hidden sm:block px-3 pb-1 -mt-2">
                 <span className="text-[11px] text-gray-500">
-                  Press <b>Enter</b> to send â€¢ <b>Shift</b>+<b>Enter</b> for new line
+                  Press <b>Enter</b> to send • <b>Shift</b>+<b>Enter</b> for new line
                 </span>
               </div>
             </div>

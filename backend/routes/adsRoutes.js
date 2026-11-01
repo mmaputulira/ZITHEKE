@@ -1,3 +1,4 @@
+import { requireMerchant } from "../middlewares/marketplaceAuth.js";
 import express from "express";
 import {
   createAd,
@@ -11,15 +12,12 @@ import {
   enableFeaturedAd,
   disableFeaturedAd,
   incrementView,
-  updateFavoriteCount,
   searchAds,
   getPromoAds,
 } from "../Controllers/adController.js";
 
 // 🔐 AUTH MIDDLEWARE
 import authMiddleware from "../middlewares/authMiddleware.js";
-import requirePremiumAccess from "../middlewares/requirePremiumAccess.js";
-import { MEMBERSHIP_PLANS } from "../constants/membershipPlans.js";
 
 // 🔐 OWNER / ADMIN PERMISSION MIDDLEWARE
 import adPermissionMiddleware from "../middlewares/adPermissionMiddleware.js";
@@ -40,17 +38,20 @@ const router = express.Router();
 router.post(
   "/create",
   authMiddleware,
+  requireMerchant,
   adUpload,
   multerErrorHandler,
   createAd
 );
 
-router.post("/optimize-listing", authMiddleware, optimizeListingDraft);
+router.post("/optimize-listing", authMiddleware,
+  requireMerchant, optimizeListingDraft);
 
 /* =================================================
    👤 GET LOGGED-IN USER ADS
 ================================================= */
-router.get("/user/:uid", authMiddleware, getUserAds);
+router.get("/user/:uid", authMiddleware,
+  requireMerchant, getUserAds);
 
 /* =================================================
    🔎 SEARCH ADS (PUBLIC)
@@ -76,20 +77,12 @@ router.get("/", getAllAds);
 router.put("/:id/view", incrementView);
 
 /* =================================================
-   ❤️ UPDATE FAVORITE COUNT (LOGIN)
-================================================= */
-router.put(
-  "/:id/favorite",
-  authMiddleware,
-  updateFavoriteCount
-);
-
-/* =================================================
    💰 MARK AD AS SOLD (OWNER / ADMIN)
 ================================================= */
 router.put(
   "/:id/sold",
   authMiddleware,
+  requireMerchant,
   adPermissionMiddleware,
   markAsSold
 );
@@ -100,14 +93,15 @@ router.put(
 router.put(
   "/:id/feature",
   authMiddleware,
+  requireMerchant,
   adPermissionMiddleware,
-  requirePremiumAccess(MEMBERSHIP_PLANS.BASIC),
   enableFeaturedAd
 );
 
 router.delete(
   "/:id/feature",
   authMiddleware,
+  requireMerchant,
   adPermissionMiddleware,
   disableFeaturedAd
 );
@@ -118,6 +112,7 @@ router.delete(
 router.put(
   "/:id",
   authMiddleware,
+  requireMerchant,
   adPermissionMiddleware,
   adUpload,
   multerErrorHandler,
@@ -130,6 +125,7 @@ router.put(
 router.delete(
   "/:id",
   authMiddleware,
+  requireMerchant,
   adPermissionMiddleware,
   deleteAd
 );

@@ -1,142 +1,20 @@
-// src/context/AuthContext.jsx
-import React, { createContext, useState, useEffect, useContext } from "react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
+import { signOut } from "firebase/auth";
 import { auth } from "../firebase.js";
-import axios from "axios";
-
+import api from "../api/axios.js";
+import { disconnectSocket } from "../socket.js";
 export const AuthContext = createContext();
-
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const BASE_URL = "/api";
-
-  useEffect(() => {
-    // Firebase Auth Listener (Google Sign-In only)
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setLoading(true);
-
-      if (!currentUser) {
-        const authUserRaw = localStorage.getItem("authUser");
-        const token = localStorage.getItem("token");
-        if (authUserRaw && token) {
-          try {
-            const authUser = JSON.parse(authUserRaw);
-            setUser(authUser);
-          } catch {
-            localStorage.removeItem("authUser");
-            localStorage.removeItem("token");
-            localStorage.removeItem("refreshToken");
-            setUser(null);
-          }
-        } else {
-          localStorage.removeItem("token");
-          localStorage.removeItem("refreshToken");
-          localStorage.removeItem("authUser");
-          setUser(null);
-        }
-        setLoading(false);
-        return;
-      }
-
-      try {
-        if (currentUser.email && !currentUser.emailVerified) {
-          setUser(null);
-          setLoading(false);
-          return;
-        }
-
-        const idToken = await currentUser.getIdToken();
-        const res = await axios.post(`${BASE_URL}/users/register`, {
-          idToken,
-          uid: currentUser.uid,
-          name: currentUser.displayName || "User",
-          email: currentUser.email,
-          photoURL: currentUser.photoURL || "",
-          phone: currentUser.phoneNumber || "",
-        });
-
-        if (res.data?.token) {
-          localStorage.setItem("token", res.data.token);
-        }
-        if (res.data?.refreshToken) {
-          localStorage.setItem("refreshToken", res.data.refreshToken);
-        }
-
-        if (res.data?.linkedPhoneUser) {
-          localStorage.setItem(
-            "mergeNotice",
-            "We linked your phone account to this email."
-          );
-        }
-
-        if (res.data?.user) {
-          const mergedUser = {
-            uid: currentUser.uid,
-            email: currentUser.email,
-            name: res.data.user.name || currentUser.displayName,
-            photoURL: res.data.user.photoURL || currentUser.photoURL || "",
-            role: res.data.user.role || "user",
-          };
-
-          localStorage.setItem("authUser", JSON.stringify(mergedUser));
-          setUser(mergedUser);
-        } else {
-          setUser(currentUser);
-        }
-      } catch (error) {
-        console.error(
-          "Error syncing user to backend:",
-          error.response?.data || error.message
-        );
-        setUser(null);
-        localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("authUser");
-      } finally {
-        setLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [BASE_URL]);
-
-  const logout = async () => {
-    try {
-      const current = user || auth.currentUser;
-      const payload = {
-        uid: current?.uid,
-        email: current?.email,
-        name: current?.name || current?.displayName || "User",
-      };
-
-      if (payload.uid) {
-        await axios.post(`${BASE_URL}/users/logout`, payload);
-      }
-
-      const refreshToken = localStorage.getItem("refreshToken");
-      await axios.post(`${BASE_URL}/auth/logout`, {
-        refreshToken,
-      });
-
-      if (auth.currentUser) {
-        await signOut(auth);
-      }
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("authUser");
-      setUser(null);
-    } catch (error) {
-      console.error("Logout error:", error.message);
-    }
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, setUser, loading, logout }}>
-      {!loading && children}
-    </AuthContext.Provider>
-  );
+export const AuthProvider = ({children}) => {
+  const [user,setState] = useState(null), [loading,setLoading] = useState(true);
+  const setUser = useCallback(value => { setState(value); if(value)localStorage.setItem("authUser",JSON.stringify(value));else { localStorage.removeItem("authUser"); disconnectSocket(); } },[]);
+  const refreshAccount = useCallback(async () => {
+    if(!localStorage.getItem("token")) { setUser(null); return null; }
+    try { const {data}=await api.get("/auth/me");setUser(data.user);return data.user; }
+    catch(error) { if([401,403].includes(error.response?.status)){setUser(null);localStorage.removeItem("token");localStorage.removeItem("refreshToken");} throw error; }
+  },[setUser]);
+  useEffect(()=>{ let mounted=true; refreshAccount().catch(()=>{}).finally(()=>{if(mounted)setLoading(false)});return()=>{mounted=false} },[refreshAccount]);
+  useEffect(()=>{const onFocus=()=>refreshAccount().catch(()=>{});const update=e=>{if(e.detail)setUser(e.detail)};window.addEventListener("focus",onFocus);window.addEventListener("account-updated",update);return()=>{window.removeEventListener("focus",onFocus);window.removeEventListener("account-updated",update)}},[refreshAccount,setUser]);
+  const logout = async () => { try { await api.post("/auth/logout",{refreshToken:localStorage.getItem("refreshToken")}); } catch {} try {if(auth.currentUser)await signOut(auth);} finally { for(const key of ["token","refreshToken","authUser"])localStorage.removeItem(key);setUser(null); } };
+  return <AuthContext.Provider value={{user,setUser,loading,logout,refreshAccount}}>{children}</AuthContext.Provider>;
 };
-
-export const useAuth = () => useContext(AuthContext);
+export const useAuth=()=>useContext(AuthContext);

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import adminApi from "../../api/adminApi.js";
+import CurrencyInput from "../Common/CurrencyInput.jsx";
 import Swal from "sweetalert2";
 import {
   CheckCircle,
@@ -967,7 +968,7 @@ const AllAds = () => {
                     <div className="rounded-2xl bg-slate-50 p-5">
                       <h3 className="text-lg font-semibold text-[#1A1D64]">Pricing & Owner</h3>
                       <div className="mt-5 grid gap-4 md:grid-cols-2">
-                        <label><span className="mb-2 block text-sm text-slate-600">Price</span><input name="price" type="number" value={editForm.price} onChange={updateEditField} className="w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:border-[#2E3192]/40 focus:ring-4 focus:ring-[#2E3192]/10" /></label>
+                        <label><span className="mb-2 block text-sm text-slate-600">Price</span><CurrencyInput name="price" value={editForm.price} onChange={updateEditField} className="w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:border-[#2E3192]/40 focus:ring-4 focus:ring-[#2E3192]/10" /></label>
                         <label><span className="mb-2 block text-sm text-slate-600">Status</span><select name="status" value={editForm.status} onChange={updateEditField} className="w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:border-[#2E3192]/40 focus:ring-4 focus:ring-[#2E3192]/10"><option value="Pending">Pending</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option><option value="Sold">Sold</option></select></label>
                         {!hidesConditionCategory(editForm.category) && (
                           <label><span className="mb-2 block text-sm text-slate-600">Condition</span><select name="condition" value={editForm.condition} onChange={updateEditField} className="w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:border-[#2E3192]/40 focus:ring-4 focus:ring-[#2E3192]/10"><option value="New">New</option><option value="Used">Used</option><option value="Not Applicable">Condition Off</option></select></label>

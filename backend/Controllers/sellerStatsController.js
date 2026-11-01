@@ -1,4 +1,5 @@
 import Ad from "../models/Ad.js";
+import User from "../models/User.js";
 
 /* =====================================================
    📊 GET SELLER STATS (PUBLIC)
@@ -19,31 +20,28 @@ export const getSellerStats = async (req, res) => {
     /* ===============================
        📦 STATS CALCULATION
     =============================== */
-    const totalAds = await Ad.countDocuments({
-      ownerUid: sellerId,
-    });
+    const [totalAds, approvedAds, seller, firstAd] = await Promise.all([
+      Ad.countDocuments({ ownerUid: sellerId }),
+      Ad.countDocuments({ ownerUid: sellerId, status: "Approved" }),
+      User.findOne({ uid: sellerId })
+        .select("merchantVerified status accountType merchantStatus createdAt")
+        .lean(),
+      Ad.findOne({ ownerUid: sellerId })
+        .sort({ createdAt: 1 })
+        .select("createdAt")
+        .lean(),
+    ]);
 
-    const approvedAds = await Ad.countDocuments({
-      ownerUid: sellerId,
-      status: "Approved",
-    });
+    if (!seller || seller.accountType === "buyer" || seller.status !== "Active" || (seller.merchantStatus || "active") !== "active") {
+      return res.status(404).json({ message: "Seller not found" });
+    }
 
-    /* ===============================
-       🕒 SELLER JOIN DATE
-       (First Ad Created)
-    =============================== */
-    const firstAd = await Ad.findOne({ ownerUid: sellerId })
-      .sort({ createdAt: 1 })
-      .select("createdAt");
-
-    /* ===============================
-       ✅ RESPONSE (PUBLIC SAFE DATA)
-    =============================== */
     return res.status(200).json({
-      joinedAt: firstAd?.createdAt || null,
+      joinedAt: seller.createdAt || firstAd?.createdAt || null,
       totalAds,
       approvedAds,
-      isTrustedSeller: approvedAds >= 3,
+      isVerifiedSeller: Boolean(seller.merchantVerified),
+      isEstablishedSeller: approvedAds >= 3,
     });
   } catch (error) {
     console.error("❌ Seller stats error:", error);

@@ -1,4 +1,4 @@
-﻿// src/pages/Dashboard/Profile.jsx
+// src/pages/Dashboard/Profile.jsx
 import React, { useEffect, useState } from "react";
 import Sidebar from "../../Components/Sidebar/Sidebar.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
@@ -54,7 +54,7 @@ const Profile = () => {
     setProfilePhoto(getUserAvatarSrc(user));
   }, [user]);
 
-  /* âœ… Fetch Profile */
+  /* ✅ Fetch Profile */
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user?.uid) return;
@@ -79,7 +79,7 @@ const Profile = () => {
           });
         }
       } catch (error) {
-        console.log("â„¹ï¸ No profile found. Creating one...");
+        console.log("ℹ️ No profile found. Creating one...");
         const token = localStorage.getItem("token");
 
 await axios.post(
@@ -162,20 +162,20 @@ await axios.post(
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-/* âœ… Save Changes */
+/* ✅ Save Changes */
 const handleSave = async () => {
   try {
-    // ðŸ” JWT token
+    // 🔐 JWT token
     const token = localStorage.getItem("token");
 
-    // 1ï¸âƒ£ Update Firebase display name only if Firebase session exists
+    // 1️⃣ Update Firebase display name only if Firebase session exists
     if (auth.currentUser) {
       await updateProfile(auth.currentUser, {
         displayName: form.name,
       });
     }
 
-    // 2ï¸âƒ£ Update backend profile (JWT protected)
+    // 2️⃣ Update backend profile (JWT protected)
     await axios.put(
       `/api/users/${user.uid}`,
       {
@@ -191,9 +191,9 @@ const handleSave = async () => {
       }
     );
 
-    // âœ… Success popup
+    // ✅ Success popup
     Swal.fire({
-      title: "Profile Updated âœ…",
+      title: "Profile Updated ✅",
       text: "Your profile has been saved successfully!",
       icon: "success",
       timer: 1800,
@@ -348,7 +348,7 @@ const handleSave = async () => {
                   <input
                     type="text"
                     name="location"
-                    placeholder="Delhi, India"
+                    placeholder="Blantyre, Malawi"
                     value={form.location}
                     onChange={handleChange}
                     disabled={!isEditing}

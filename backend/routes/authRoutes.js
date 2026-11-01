@@ -1,3 +1,5 @@
+import { getAccount, applyForMerchant } from "../Controllers/accountController.js";
+import { requireBuyer } from "../middlewares/marketplaceAuth.js";
 import { Router } from "express";
 import authMiddleware from "../middlewares/authMiddleware.js";
 import {
@@ -17,6 +19,8 @@ import { smsLimiter, emailAuthLimiter } from "../middlewares/rateLimit.js";
 
 const router = Router();
 
+router.get("/me", authMiddleware, getAccount);
+router.post("/merchant-application", authMiddleware, requireBuyer, applyForMerchant);
 router.post("/refresh", refreshTokenHandler);
 router.post("/logout", logoutSession);
 router.post("/email-login/check", checkEmailLogin);

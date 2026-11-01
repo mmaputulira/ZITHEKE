@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { ALLOWED_PREMIUM_PLAN_AMOUNTS } from "../constants/membershipPlans.js";
 
 export const planSlugParamSchema = z.object({
   slug: z
@@ -39,14 +38,7 @@ const featureSchema = z
   .min(1, "Feature cannot be empty")
   .max(160, "Feature is too long");
 
-const priceSchema = z.coerce
-  .number()
-  .refine(
-    (value) => value === 0 || ALLOWED_PREMIUM_PLAN_AMOUNTS.includes(value),
-    {
-      message: `Price must be 0 or one of the allowed premium amounts: ${ALLOWED_PREMIUM_PLAN_AMOUNTS.join(", ")} MWK`,
-    }
-  );
+const priceSchema = z.coerce.number().min(0, "Price must be 0 or greater");
 
 export const createPlanSchema = z.object({
   name: planNameSchema,

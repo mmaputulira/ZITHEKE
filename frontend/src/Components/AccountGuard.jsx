@@ -1,0 +1,4 @@
+import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
+export default function AccountGuard({type,children}){const{user,loading}=useAuth();const location=useLocation();if(loading)return <p className="p-12">Loading account…</p>;if(!user)return <Navigate to={type==='buyer'?'/buyer/login':'/login'} state={{returnTo:location.pathname+location.search}} replace/>;if(type&&user.accountType!==type)return <Navigate to={user.accountType==='buyer'?'/buyer/account':'/dashboard'} replace/>;if(type==='merchant'&&!user.canSell)return <div className="p-12 pt-28"><h1 className="text-2xl font-bold">Seller access is awaiting review or unavailable</h1><p>Contact Zitheke support about your merchant account.</p></div>;return children}

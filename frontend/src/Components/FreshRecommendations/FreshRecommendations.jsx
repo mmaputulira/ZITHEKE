@@ -1,8 +1,8 @@
-﻿import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { MapPin, LocateFixed, Loader2, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { INDIA_LOCATIONS } from "../../Data/indiaCities";
+import { MALAWI_LOCATIONS } from "../../Data/malawiLocations";
 import { Share2 } from "lucide-react";
 import {
   getCardImageOrFallback,
@@ -14,7 +14,7 @@ import {
 const BASE_URL = "/api";
 const LIMIT = 25;
 
-/* ðŸ”¥ FIXED Time Ago */
+/* 🔥 FIXED Time Ago */
 const timeAgo = (dateString) => {
   if (!dateString) return "Just now";
 
@@ -55,10 +55,10 @@ const FreshRecommendations = () => {
      FLATTEN LOCATIONS
   ============================= */
   const ALL_LOCATIONS = useMemo(() => {
-    return Object.entries(INDIA_LOCATIONS).flatMap(([_, cities]) =>
-      Object.entries(cities).flatMap(([city, areas]) => [
-        city,
-        ...areas.map((area) => `${area}, ${city}`),
+    return Object.entries(MALAWI_LOCATIONS).flatMap(([_, districts]) =>
+      Object.entries(districts).flatMap(([district, areas]) => [
+        district,
+        ...areas.map((area) => `${area}, ${district}`),
       ])
     );
   }, []);

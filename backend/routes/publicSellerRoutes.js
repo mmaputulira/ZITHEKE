@@ -1,7 +1,8 @@
 import express from "express";
-import { getPublicSellerAds } from "../Controllers/publicSellerController.js";
+import { getPublicSellerAds, getSellerDirectory } from "../Controllers/publicSellerController.js";
 
 const router = express.Router();
+router.get("/", getSellerDirectory);
 
 /* =====================================================
    🌍 PUBLIC SELLER ROUTES

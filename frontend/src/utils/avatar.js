@@ -1,4 +1,4 @@
-import defaultAvatarPng from "../images/—Pngtree—user profile avatar_13369988.png";
+import defaultAvatarPng from "../images/default-avatar.webp";
 
 export const DEFAULT_AVATAR_SRC = defaultAvatarPng;
 

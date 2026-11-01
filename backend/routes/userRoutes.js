@@ -17,7 +17,7 @@ router.post("/register", emailAuthLimiter, registerUser);
 
 router.post("/phone-register", registerUserByPhone);
 
-router.post("/logout", logoutUser);
+router.post("/logout", authMiddleware, logoutUser);
 
 router.get("/:uid", authMiddleware, getUserProfile);
 

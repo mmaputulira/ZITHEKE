@@ -556,7 +556,7 @@ Furniture: [
 
   // ? Validation (Updated & Backend-safe)
   const validateStep = (targetStep = step) => {
-    // STEP 1 � BASIC INFO
+    // STEP 1 - BASIC INFO
     if (targetStep === 1) {
       if (!form.title || form.title.trim().length < 5) {
         Swal.fire(
@@ -582,7 +582,7 @@ Furniture: [
       }
     }
 
-    // STEP 2 � PRICE & MEDIA
+    // STEP 2 - PRICE & MEDIA
     else if (targetStep === 2) {
       if (!showSalary && form.category !== "Services") {
         if (!form.price || Number(form.price) <= 0) {

@@ -117,12 +117,30 @@ export const env = {
   // CAPTCHA (Turnstile)
   TURNSTILE_SECRET_KEY: optional("TURNSTILE_SECRET_KEY", ""),
 
+  // National Bank bank-transfer instructions (non-secret display values)
+  BANK_DISPLAY_NAME: optional("BANK_DISPLAY_NAME", "National Bank"),
+  BANK_ACCOUNT_NAME: optional("BANK_ACCOUNT_NAME", "Alinafe Online Limited"),
+  BANK_ACCOUNT_NUMBER: optional("BANK_ACCOUNT_NUMBER", "1006477832"),
+  BANK_BRANCH: optional("BANK_BRANCH", ""),
+
   // Airtel Money (Phase 2B initiation foundation)
   AIRTEL_BASE_URL: optional("AIRTEL_BASE_URL", "https://openapiuat.airtel.mw").replace(/\/+$/, ""),
   AIRTEL_CLIENT_ID: optional("AIRTEL_CLIENT_ID", ""),
   AIRTEL_CLIENT_SECRET: optional("AIRTEL_CLIENT_SECRET", ""),
   AIRTEL_COUNTRY: optional("AIRTEL_COUNTRY", "MW").toUpperCase(),
   AIRTEL_CURRENCY: optional("AIRTEL_CURRENCY", "MWK").toUpperCase(),
+
+  // National Electronic Payment Gateway (NEPG) via NBM third-party API
+  NEPG_ENABLED: optionalBoolean("NEPG_ENABLED", false),
+  NEPG_BASE_URL: optional("NEPG_BASE_URL", "").replace(/\/+$/, ""),
+  NEPG_CLIENT_ID: optional("NEPG_CLIENT_ID", ""),
+  NEPG_CLIENT_SECRET: optional("NEPG_CLIENT_SECRET", ""),
+  NEPG_API_KEY: optional("NEPG_API_KEY", ""),
+  NEPG_CURRENCY_CODE: optional("NEPG_CURRENCY_CODE", "454"),
+  NEPG_RETURN_URL: optional("NEPG_RETURN_URL", ""),
+  NEPG_DEFAULT_PAYMENT_METHOD: optional("NEPG_DEFAULT_PAYMENT_METHOD", "CARD").toUpperCase(),
+  NEPG_TIMEOUT_MS: optionalNumber("NEPG_TIMEOUT_MS", 20000),
+
   MPGS_ENABLED: optionalBoolean("MPGS_ENABLED", false),
   MPGS_BASE_URL: optional(
     "MPGS_BASE_URL",

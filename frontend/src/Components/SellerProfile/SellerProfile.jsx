@@ -15,6 +15,8 @@ import {
   PhoneCall,
   Mail,
   Eye,
+  UserPlus,
+  UserCheck,
 } from "lucide-react";
 import {
   getCardImageOrFallback,
@@ -22,10 +24,14 @@ import {
   handleImageFallback,
 } from "../../utils/imageVariants.js";
 import { getAvatarSrc, handleAvatarFallback } from "../../utils/avatar.js";
+import { useAuth } from "../../context/AuthContext.jsx";
+import api from "../../api/axios.js";
+import Swal from "sweetalert2";
 
 const SellerProfile = () => {
   const { sellerId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const BASE_URL = "/api";
 
@@ -34,6 +40,8 @@ const SellerProfile = () => {
   const [loading, setLoading] = useState(true);
 
   const [contactOpen, setContactOpen] = useState(false);
+  const [following, setFollowing] = useState(false);
+  const [followers, setFollowers] = useState(0);
 
   /* ----------------------------------
      Fetch Seller Ads + Seller Info
@@ -100,6 +108,20 @@ const SellerProfile = () => {
     fetchSellerData();
   }, [sellerId]);
 
+  useEffect(() => {
+    if (user?.accountType !== "buyer" || !user?.uid || !sellerId || user.uid === sellerId) return;
+    api.get(`/marketplace/follows/${sellerId}/status`).then((r) => { setFollowing(Boolean(r.data?.following)); setFollowers(Number(r.data?.followers || 0)); }).catch(() => {});
+  }, [user?.uid, sellerId]);
+
+  const toggleFollow = async () => {
+    if (!user) return navigate("/buyer/login");
+    if (user.accountType !== "buyer") return;
+    if (user.uid === sellerId) return;
+    const r = await api.post("/marketplace/follows/toggle", { sellerUid: sellerId });
+    setFollowing(Boolean(r.data?.following));
+    setFollowers(Number(r.data?.followers || followers));
+  };
+
   /* ----------------------------------
      Share Profile (Copy)
   ---------------------------------- */
@@ -107,9 +129,9 @@ const SellerProfile = () => {
     try {
       const profileUrl = `${window.location.origin}/profile/${sellerId}`;
       await navigator.clipboard.writeText(profileUrl);
-      alert("Seller profile link copied to clipboard!");
+      await Swal.fire({ icon: "success", title: "Link copied", text: "Seller profile link copied to your clipboard.", timer: 1400, showConfirmButton: false });
     } catch (err) {
-      alert("Failed to copy profile link");
+      await Swal.fire({ icon: "error", title: "Could not copy link", text: "Please try again or copy the page address manually.", confirmButtonColor: "#2E3192" });
     }
   };
 
@@ -462,6 +484,13 @@ const SellerProfile = () => {
                     Share on WhatsApp
                   </button>
 
+                  {user?.uid !== sellerId && (
+                    <button onClick={toggleFollow} className={`flex items-center gap-2 px-4 py-2 text-sm rounded-full border transition ${following ? "bg-[#F9B233]/15 border-[#F9B233]/40 text-[#1A1D64]" : "border-[#2E3192] text-[#2E3192] hover:bg-[#2E3192] hover:text-white"}`}>
+                      {following ? <UserCheck size={16}/> : <UserPlus size={16}/>}
+                      {following ? `Following${followers ? ` · ${followers}` : ""}` : "Follow Seller"}
+                    </button>
+                  )}
+
                   <button
                     onClick={() => setContactOpen(true)}
                     className="flex items-center gap-2 px-4 py-2 text-sm rounded-full 
@@ -660,6 +689,13 @@ const SellerProfile = () => {
                     <MessageCircle size={16} />
                     WhatsApp Share
                   </button>
+
+                  {user?.uid !== sellerId && (
+                    <button onClick={toggleFollow} className={`flex items-center gap-2 px-4 py-2 text-sm rounded-full border transition ${following ? "bg-[#F9B233]/15 border-[#F9B233]/40 text-[#1A1D64]" : "border-[#2E3192] text-[#2E3192] hover:bg-[#2E3192] hover:text-white"}`}>
+                      {following ? <UserCheck size={16}/> : <UserPlus size={16}/>}
+                      {following ? `Following${followers ? ` · ${followers}` : ""}` : "Follow Seller"}
+                    </button>
+                  )}
 
                   <button
                     onClick={() => setContactOpen(true)}

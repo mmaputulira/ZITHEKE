@@ -133,10 +133,9 @@ const MastercardCheckoutPage = ({ mode = "checkout" }) => {
   const [message, setMessage] = useState("");
   const [verificationResult, setVerificationResult] = useState(null);
 
-  const planSlug =
-    new URLSearchParams(search).get("plan") ||
-    getStoredCheckoutContext()?.planSlug ||
-    "";
+  const searchParams = new URLSearchParams(search);
+  const planSlug = searchParams.get("plan") || getStoredCheckoutContext()?.planSlug || "";
+  const adId = searchParams.get("adId") || getStoredCheckoutContext()?.adId || "";
   const checkoutContext = getStoredCheckoutContext();
 
   useEffect(() => {
@@ -180,7 +179,7 @@ const MastercardCheckoutPage = ({ mode = "checkout" }) => {
     let mounted = true;
     const runVerification = async () => {
       if (!checkoutContext?.paymentId) {
-        setError("No Mastercard payment context was found for verification.");
+        setError("We couldn't find the Mastercard payment details needed to confirm your payment.");
         setVerifying(false);
         return;
       }
@@ -205,7 +204,7 @@ const MastercardCheckoutPage = ({ mode = "checkout" }) => {
         } else {
           setMessage(
             result?.verification?.customerMessage ||
-              "Card payment is still pending verification. You can retry shortly."
+              "Your card payment is still being confirmed. Please try again shortly."
           );
         }
       } catch (err) {
@@ -240,7 +239,7 @@ const MastercardCheckoutPage = ({ mode = "checkout" }) => {
       setSubmitting(true);
       setError("");
 
-      const subscription = await createSubscriptionIntent(plan._id);
+      const subscription = await createSubscriptionIntent(plan._id, adId);
       const paymentResult = await createMastercardPaymentIntent({
         subscriptionId: subscription?._id,
         idempotencyKey: createIdempotencyKey(plan._id),
@@ -259,13 +258,14 @@ const MastercardCheckoutPage = ({ mode = "checkout" }) => {
         "";
 
       if (!gatewaySessionId || !checkoutScriptUrl) {
-        throw new Error("Mastercard checkout session was not created correctly.");
+        throw new Error("Mastercard checkout could not be started. Please try again.");
       }
 
       saveCheckoutContext({
         paymentId: paymentResult?.payment?._id || paymentResult?.initiation?.paymentId,
         subscriptionId: subscription?._id || "",
         planSlug: String(plan?.slug || "").toLowerCase(),
+        adId,
         planName: plan?.name || "",
         orderId: session.orderId || "",
         sessionId: gatewaySessionId,
@@ -367,7 +367,7 @@ const MastercardCheckoutPage = ({ mode = "checkout" }) => {
         >
           <button
             type="button"
-            onClick={() => navigate("/pricing")}
+            onClick={() => navigate(adId ? `/pricing?adId=${encodeURIComponent(adId)}` : "/dashboard/my-ads")}
             className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-100"
           >
             <ArrowLeft size={16} />
@@ -385,14 +385,14 @@ const MastercardCheckoutPage = ({ mode = "checkout" }) => {
               </h1>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
                 {mode === "checkout"
-                  ? "Start a secure hosted card payment. Premium access only unlocks after backend verification confirms the payment."
-                  : "This page reflects the hosted Mastercard checkout result, but premium activation still depends on backend payment verification."}
+                  ? "Continue with Mastercard to make a secure card payment. Your selected advert will be boosted once the payment is confirmed."
+                  : "We are confirming your Mastercard payment before activating your advert boost."}
               </p>
 
               <div className="mt-8 grid gap-3 text-sm text-slate-700">
-                <Step text="Create a pending premium subscription." />
-                <Step text="Open Mastercard hosted checkout with the secure session." />
-                <Step text="Return here and verify payment with the backend before activation." />
+                <Step text="Confirm the advert and boost plan you selected." />
+                <Step text="Continue to Mastercard to complete your card payment." />
+                <Step text="Return to Zitheke while we confirm your payment and activate your boost." />
               </div>
             </div>
 
@@ -405,7 +405,7 @@ const MastercardCheckoutPage = ({ mode = "checkout" }) => {
               ) : (
                 <>
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#2E3192]/60">
-                    {mode === "checkout" ? "Plan Summary" : "Verification Status"}
+                    {mode === "checkout" ? "Plan Summary" : "Payment Status"}
                   </p>
 
                   <div className="mt-4 rounded-[1.4rem] border border-white bg-white p-4 shadow-sm">
@@ -417,7 +417,7 @@ const MastercardCheckoutPage = ({ mode = "checkout" }) => {
                               {plan?.name || "Premium Plan"}
                             </p>
                             <p className="mt-1 text-sm text-slate-500">
-                              {plan?.durationDays || 0} days premium access
+                              {plan?.durationDays || 0} days boosted visibility
                             </p>
                           </div>
                           <div className="rounded-2xl bg-[#EEF2FF] px-4 py-3 text-right">
@@ -461,7 +461,7 @@ const MastercardCheckoutPage = ({ mode = "checkout" }) => {
                   <div className="mt-4 space-y-3">
                     <InfoChip
                       icon={ShieldCheck}
-                      text="Session creation never means payment success. Verification still happens on the backend."
+                      text="Your boost is activated only after your card payment has been successfully confirmed."
                     />
                   </div>
 
@@ -497,9 +497,7 @@ const MastercardCheckoutPage = ({ mode = "checkout" }) => {
                         onClick={() =>
                           navigate(
                             checkoutContext?.planSlug
-                              ? `/checkout/mastercard?plan=${encodeURIComponent(
-                                  checkoutContext.planSlug
-                                )}`
+                              ? `/checkout/mastercard?plan=${encodeURIComponent(checkoutContext.planSlug)}${checkoutContext.adId ? `&adId=${encodeURIComponent(checkoutContext.adId)}` : ""}`
                               : "/pricing"
                           )
                         }

@@ -52,7 +52,6 @@ const planSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-planSchema.index({ slug: 1 }, { unique: true });
 planSchema.index({ isActive: 1, priorityLevel: -1, price: 1, durationDays: 1 });
 
 const Plan = mongoose.model("Plan", planSchema);

@@ -1,3 +1,4 @@
+import { publicAccount, accountTypeOf } from "../utils/marketplacePolicy.js";
 // Controllers/userController.js
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
@@ -7,7 +8,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { EmailService } from "../Services/email.service.js";
 import { env } from "../config/env.js";
-import { firebaseAdmin } from "../config/firebaseAdmin.js";
+import { firebaseAdmin, isFirebaseAdminConfigured } from "../config/firebaseAdmin.js";
 import { normalizeMalawiPhone, isValidMalawiPhone } from "../utils/phone.js";
 import Ad from "../models/Ad.js";
 import Conversation from "../models/Conversation.js";
@@ -107,6 +108,7 @@ const mergeUserData = async ({ fromUser, toUser }) => {
   const toUid = toUser.uid;
 
   if (!fromUid || !toUid || fromUid === toUid) return;
+  if (accountTypeOf(fromUser) !== accountTypeOf(toUser)) throw Object.assign(new Error("Buyer and merchant accounts cannot be merged."), { statusCode: 409 });
 
   await Ad.updateMany(
     { ownerUid: fromUid },
@@ -192,6 +194,14 @@ export const registerUser = async (req, res) => {
       });
     }
 
+    if (!isFirebaseAdminConfigured()) {
+      return res.status(503).json({
+        success: false,
+        message: "Google sign-in is temporarily unavailable. Please use another sign-in method or try again later.",
+      });
+    }
+
+    if (req.body.accountType && !["merchant","buyer"].includes(req.body.accountType)) return res.status(400).json({ message:"Invalid account type." });
     const decoded = await firebaseAdmin.auth().verifyIdToken(idToken);
     const uid = decoded.uid;
     const email = decoded.email;
@@ -254,6 +264,8 @@ export const registerUser = async (req, res) => {
       try {
         user = await User.create({
           uid,
+          accountType: req.body.accountType === "buyer" ? "buyer" : "merchant",
+          merchantStatus: req.body.accountType === "buyer" ? "pending" : "active",
           name: fallbackName,
           email: emailLower,
           phone: incomingPhone || null,
@@ -261,7 +273,7 @@ export const registerUser = async (req, res) => {
           passwordHash: "",
           authProvider: "google",
           authProviders: ["google"],
-          verified: true,
+          verified: false,
           emailVerified: emailVerified,
           phoneVerified: false,
           lastLogin: new Date(),
@@ -351,7 +363,7 @@ export const registerUser = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "User synced successfully",
-      user,
+      user: publicAccount(user),
       linkedPhoneUser,
       token: accessToken,
       refreshToken,
@@ -359,9 +371,9 @@ export const registerUser = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Error syncing user:", error);
-    return res.status(500).json({
+    return res.status(error.statusCode || 500).json({
       success: false,
-      message: "Server error",
+      message: error.statusCode ? error.message : "Server error",
     });
   }
 };
@@ -391,10 +403,10 @@ export const getUserProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json(user);
+    res.status(200).json(publicAccount(user));
   } catch (error) {
     console.error("❌ Error fetching user:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(error.statusCode || 500).json({ message: "Server error" });
   }
 };
 
@@ -472,11 +484,11 @@ export const updateUserProfile = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Profile updated successfully",
-      user: updatedUser,
+      user: publicAccount(updatedUser),
     });
   } catch (error) {
     console.error("❌ Error updating user:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(error.statusCode || 500).json({ message: "Server error" });
   }
 };
 
@@ -485,27 +497,24 @@ export const updateUserProfile = async (req, res) => {
 ===================================================== */
 export const logoutUser = async (req, res) => {
   try {
-    const { uid, email, name } = req.body;
-
-    if (!uid && !email) {
-      return res.status(400).json({
+    const authenticatedUid = req.user?.uid;
+    if (!authenticatedUid) {
+      return res.status(401).json({
         success: false,
-        message: "Missing required fields",
+        message: "Login required",
       });
     }
 
-    const user = uid
-      ? await User.findOne({ uid })
-      : await User.findOne({ email: String(email).trim().toLowerCase() });
+    const user = await User.findOne({ uid: authenticatedUid });
 
     if (!user || !user.email) {
-      return res.status(400).json({
+      return res.status(404).json({
         success: false,
-        message: "User email not found for logout",
+        message: "User account not found",
       });
     }
 
-    const recipientName = name || user.name || user.email.split("@")[0];
+    const recipientName = user.name || user.email.split("@")[0];
 
     try {
       await EmailService.sendTemplate({
@@ -527,7 +536,7 @@ export const logoutUser = async (req, res) => {
     });
   } catch (error) {
     console.error("ƒ?O Error logging out user:", error);
-    return res.status(500).json({
+    return res.status(error.statusCode || 500).json({
       success: false,
       message: "Server error",
     });
