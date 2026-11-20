@@ -19,6 +19,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useAuth, homeForMode } from "../../context/AuthContext.jsx";
 import { ModeSwitch } from "../AccountMode/ModePicker.jsx";
+import { LiveAvatar } from "../AccountMode/Avatars.jsx";
 import useMembershipAccess from "../../hooks/useMembershipAccess.js";
 import SearchBar from "../SearchBar/SearchBar.jsx";
 import Swal from "sweetalert2";
@@ -108,6 +109,7 @@ const Navbar = () => {
      AVATAR
   ========================= */
   const getAvatar = () => {
+    if (user) return <LiveAvatar user={user} mode={mode} size={40} />;
     const avatarSrc = getUserAvatarSrc(user);
     return (
       <img
