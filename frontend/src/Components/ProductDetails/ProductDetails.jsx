@@ -263,7 +263,7 @@ const ProductDetails = () => {
   };
 
   useEffect(() => {
-    if (!user || user.accountType !== "buyer" || !ad?._id || user.uid === ad.ownerUid) return;
+    if (!user || !user.canBuy || !ad?._id || user.uid === ad.ownerUid) return;
     api.get("/marketplace/price-alerts")
       .then((res) => setPriceAlertActive((res.data || []).some((row) => String(row.adId?._id) === String(ad._id))))
       .catch(() => {});
@@ -271,7 +271,8 @@ const ProductDetails = () => {
 
   const requireBuyerAction = () => {
     if(!user) { navigate("/buyer/login", {state:{returnTo:"/ad/" + ad?._id}}); return false; }
-    if(user.accountType !== "buyer") { Swal.fire("Buyer account required", "Sign out and use a buyer account to engage with another merchant.", "info"); return false; }
+    // One account buys and sells; only your own listing is off limits.
+    if(user.uid === ad?.ownerUid) { Swal.fire("This is your listing", "You can't buy or make an offer on your own item.", "info"); return false; }
     return true;
   };
   const handleBuy = async () => {
@@ -886,7 +887,7 @@ const ProductDetails = () => {
               </span>
             </motion.button>
 
-            {(!user || user.accountType === "buyer") && user?.uid !== ad?.ownerUid && (<>
+            {user?.uid !== ad?.ownerUid && (<>
               {ad.canPurchase && <><button onClick={handleBuy} className="rounded-full bg-[#F4B400] px-5 py-3 font-bold text-[#1A1D64]">Buy / Send Request</button><button onClick={handleCart} className="rounded-full border border-[#2E3192] px-5 py-3 font-semibold text-[#2E3192]">Add to Cart</button></>}
               {ad.negotiable && ad.status === "Approved" && !ad.reservedOrderId && <motion.button whileTap={{ scale: 0.95 }} whileHover={{ y: -2 }} onClick={handleMakeOffer} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#2E3192] text-white text-sm font-semibold shadow-sm hover:bg-[#1F2370] transition-all">
                 <HandCoins size={17}/> Make Offer

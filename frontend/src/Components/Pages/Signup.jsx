@@ -11,7 +11,7 @@ const Signup = ({ accountType = "merchant" }) => {
   const buyerPortal = accountType === "buyer";
   const destination = location.state?.returnTo?.startsWith("/ad/") ? location.state.returnTo : buyerPortal ? "/buyer/account" : "/dashboard";
   const navigate = useNavigate();
-  const { setUser } = useAuth();
+  const { setUser, requestModeChoice } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -97,10 +97,11 @@ const Signup = ({ accountType = "merchant" }) => {
           photoURL: data.user.photoURL || "",
           role: data.user.role || "user",
           phone: data.user.phone || "",
-        accountType:data.user.accountType, merchantStatus:data.user.merchantStatus, canSell:data.user.canSell, canBuy:data.user.canBuy, status:data.user.status,
+        accountType:data.user.accountType, merchantStatus:data.user.merchantStatus, canSell:data.user.canSell, canBuy:data.user.canBuy, canStartSelling:data.user.canStartSelling, status:data.user.status,
         };
         localStorage.setItem("authUser", JSON.stringify(mergedUser));
         setUser(mergedUser);
+        requestModeChoice();
       }
 
       if (data?.token) localStorage.setItem("token", data.token);
@@ -189,13 +190,12 @@ const Signup = ({ accountType = "merchant" }) => {
           className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md mx-auto"
         >
           <h1 className="text-2xl font-bold text-gray-800">
-            {buyerPortal ? "Create buyer account" : "Create seller account"}
+            Create your Zitheke account
           </h1>
           <p className="text-sm text-gray-500 mb-6">
-            {buyerPortal ? "Browse, negotiate and buy from local merchants" : "Post listings and boost your ads on Zitheke"}
+            {buyerPortal ? "Shop from local sellers. You can start selling later with the same account." : "One account to buy and sell. Post listings and shop from others."}
           </p>
 
-          <button type="button" onClick={() => navigate(buyerPortal ? "/login" : "/buyer/login")} className="mb-4 text-sm font-semibold text-[#2E3192]">{buyerPortal ? "Looking to sell? Seller login" : "Looking to buy? Buyer login"}</button>
           {error && (
             <p className="text-red-600 text-xs text-center bg-red-50 py-2 rounded-lg mb-4">
               {error}

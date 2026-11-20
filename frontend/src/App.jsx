@@ -9,7 +9,8 @@ import SellerDirectory from "./Components/SellerDirectory/SellerDirectory.jsx";
 // src/App.jsx
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "./context/AuthContext.jsx";
+import { useAuth, homeForMode } from "./context/AuthContext.jsx";
+import ModePicker from "./Components/AccountMode/ModePicker.jsx";
 
 import MainLayout from "./layouts/MainLayout.jsx";
 
@@ -58,7 +59,7 @@ import BrowseListings from "./Components/BrowseListings/BrowseListings.jsx";
 import BoostedPage from "./Components/BoostedPage/BoostedPage.jsx";
 
 function App() {
-  const { user, loading } = useAuth();
+  const { user, loading, mode, pickingMode } = useAuth();
 
   if (loading) {
     return (
@@ -69,11 +70,13 @@ function App() {
   }
 
   return (
+    <>
+    {user && pickingMode && <ModePicker />}
     <Routes>
       <Route path="/buyer" element={<MainLayout><BuyerHome /></MainLayout>} />
       <Route path="/sellers" element={<MainLayout><SellerDirectory /></MainLayout>} />
-      <Route path="/buyer/login" element={!user ? <Login accountType="buyer" /> : <Navigate to={user.accountType === "buyer" ? "/buyer/account" : "/dashboard"} replace />} />
-      <Route path="/buyer/signup" element={!user ? <Signup accountType="buyer" /> : <Navigate to={user.accountType === "buyer" ? "/buyer/account" : "/dashboard"} replace />} />
+      <Route path="/buyer/login" element={!user ? <Login accountType="buyer" /> : <Navigate to={homeForMode(mode)} replace />} />
+      <Route path="/buyer/signup" element={!user ? <Signup accountType="buyer" /> : <Navigate to={homeForMode(mode)} replace />} />
       <Route path="/buyer/account" element={<AccountGuard type="buyer"><MainLayout><BuyerLayout /></MainLayout></AccountGuard>}>
         <Route index element={<BuyerOverview />} />
         <Route path="cart" element={<BuyerCart />} />
@@ -287,11 +290,11 @@ function App() {
 
       <Route
         path="/login"
-        element={!user ? <Login /> : <Navigate to={user.accountType === "buyer" ? "/buyer/account" : "/dashboard"} replace />}
+        element={!user ? <Login /> : <Navigate to={homeForMode(mode)} replace />}
       />
       <Route
         path="/signup"
-        element={!user ? <Signup /> : <Navigate to={user.accountType === "buyer" ? "/buyer/account" : "/dashboard"} replace />}
+        element={!user ? <Signup /> : <Navigate to={homeForMode(mode)} replace />}
       />
       <Route
         path="/check-email"
@@ -310,6 +313,7 @@ function App() {
         }
       />
     </Routes>
+    </>
   );
 }
 

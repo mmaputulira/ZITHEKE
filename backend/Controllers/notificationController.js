@@ -9,7 +9,8 @@ export const listMyNotifications = async (req, res) => {
     if (!user) return res.status(404).json({ success:false, message:"User not found" });
     const isSeller = accountTypeOf(user) === "merchant";
     const now = new Date();
-    const audience = ["all", isSeller ? "sellers" : "buyers"];
+    // Everyone buys; sellers also get seller announcements.
+    const audience = isSeller ? ["all", "sellers", "buyers"] : ["all", "buyers"];
     const items = await AdminNotification.find({
       isActive:true,
       $and:[

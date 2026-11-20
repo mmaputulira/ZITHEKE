@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 
 import Swal from "sweetalert2";
+import { ModeSwitch } from "../AccountMode/ModePicker.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import {
   Menu,
@@ -259,6 +260,9 @@ const Sidebar = () => {
 
         {(open || isMobile) && (
           <div className="px-3 pb-4 border-t border-[var(--border)]">
+            <div className="-mx-3 pt-2">
+              <ModeSwitch onSwitched={handleNavClick} />
+            </div>
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[#2E3192]/10"

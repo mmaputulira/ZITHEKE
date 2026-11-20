@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import api from "../../api/axios.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { promptCurrencyAmount } from "../../utils/promptCurrencyAmount.js";
 import { formatPrice } from "../../utils/formatPrice.js";
 export default function MarketplaceOffers(){
-  const{user}=useAuth();const buyer=user.accountType==='buyer';const[rows,setRows]=useState([]),[error,setError]=useState(''),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);const nav=useNavigate();
+  useAuth();const location=useLocation();// Same account on both sides: the customer area shows offers you sent, the seller dashboard shows offers you received.
+  const buyer=location.pathname.startsWith('/buyer');const[rows,setRows]=useState([]),[error,setError]=useState(''),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);const nav=useNavigate();
   const load=async()=>{try{const{data}=await api.get('/marketplace/offers');setRows(data[buyer?'sent':'received']||[]);setError('')}catch(e){setError(e.response?.data?.message||'Unable to load offers.')}finally{setLoading(false)}};
   useEffect(()=>{load()},[buyer]);
   const act=async(o,action)=>{setBusy(true);try{let counterAmount;if(action==='COUNTER'){counterAmount=await promptCurrencyAmount({title:'Counter offer',label:'Your counter offer (MWK)',placeholder:o.amount,confirmButtonText:'Send counter'});if(!counterAmount)return}await api.patch(`/marketplace/offers/${o._id}`,{action,counterAmount});await load()}catch(e){setError(e.response?.data?.message||'Unable to update offer.')}finally{setBusy(false)}};

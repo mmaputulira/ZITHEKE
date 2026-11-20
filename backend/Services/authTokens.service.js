@@ -1,4 +1,4 @@
-import { assertAccountAvailable, accountTypeOf, policyError } from "../utils/marketplacePolicy.js";
+import { assertAccountAvailable } from "../utils/marketplacePolicy.js";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import Session from "../models/Session.js";
@@ -9,8 +9,8 @@ const hashToken = (token) =>
 
 export const createSessionAndTokens = async (user, req) => {
   assertAccountAvailable(user);
-  const portal = req?.body?.accountType;
-  if (portal && portal !== accountTypeOf(user)) throw policyError(403, `Use the ${accountTypeOf(user)} login for this account.`);
+  // One login for everyone: the buyer and seller sign-in pages both accept
+  // any account. The customer or seller view is chosen in the app.
   const refreshToken = jwt.sign(
     { uid: user.uid, type: "refresh" },
     env.JWT_REFRESH_SECRET,

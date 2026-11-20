@@ -75,9 +75,10 @@ test("Marketplace identity, negotiation, orders, cart and advertising boundaries
     });
     await t.test("buyers cannot post, inspect merchant analytics or initiate advertising; merchants cannot buy or cart",async()=>{
       for(const [url,method,body] of [["/api/ads/create","POST",{}],["/api/marketplace/analytics","GET"],["/api/subscriptions","POST",{}],["/api/payments","POST",{}]])assert.equal((await request("buyer",url,method,body)).status,403,url);
-      for(const [url,method,body] of [["/api/cart","GET"],["/api/orders","POST",{}],["/api/marketplace/offers","POST",{}]])assert.equal((await request("seller",url,method,body)).status,403,url);
-      assert.equal((await request("buyer","/api/orders/me?role=seller")).status,403);
-      await assert.rejects(createSessionAndTokens(buyer,{body:{accountType:"merchant"}}),e=>e.statusCode===403);
+      // One account buys and sells: a seller can also use buyer features.
+      for(const [url,method,body] of [["/api/cart","GET"],["/api/orders","POST",{}],["/api/marketplace/offers","POST",{}]])assert.notEqual((await request("seller",url,method,body)).status,403,url);
+      const sellerView=await request("buyer","/api/orders/me?role=seller");assert.equal(sellerView.status,200);assert.equal(sellerView.data.orders.length,0);
+      await createSessionAndTokens(buyer,{body:{accountType:"merchant"}}); // either sign-in page accepts any account
       const plan=await Plan.create({name:"Test plan",slug:"test",price:3000,currency:"MWK",durationDays:7});
       await assert.rejects(subscriptionService.createPendingSubscription({userUid:buyer.uid,planId:plan._id,scope:"seller_membership"}),e=>e.statusCode===403);
       await assert.rejects(paymentService.createPaymentIntent({userUid:buyer.uid,subscriptionId:new mongoose.Types.ObjectId(),gateway:"bank",paymentMethod:"bank_transfer"}),e=>e.statusCode===409);
@@ -116,7 +117,9 @@ test("Marketplace identity, negotiation, orders, cart and advertising boundaries
     });
     await t.test("engagement binds buyer/merchant and listing; revoked and suspended accounts fail authoritative resolution",async()=>{
       assert.equal((await validateEngagement({senderId:buyer.uid,receiverId:merchant.uid,adId:counterListing._id})).merchant.uid,merchant.uid);
-      await assert.rejects(validateEngagement({senderId:other.uid,receiverId:merchant.uid}),e=>e.statusCode===403);
+      assert.equal((await validateEngagement({senderId:other.uid,receiverId:merchant.uid})).merchant.uid,merchant.uid); // seller-to-seller chat
+      assert.equal((await validateEngagement({senderId:other.uid,receiverId:merchant.uid,adId:counterListing._id})).buyer.uid,other.uid);
+      assert.equal((await validateEngagement({senderId:merchant.uid,receiverId:buyer.uid,adId:counterListing._id})).merchant.uid,merchant.uid);
       assert.equal((await request("buyer","/api/conversations/start","POST",{senderId:buyer.uid,receiverId:other.uid,adId:counterListing._id})).status,409);
       const revoked=await account("revoked","buyer"),tk=await token(revoked);await Session.updateMany({userUid:revoked.uid},{$set:{revokedAt:new Date()}});await assert.rejects(resolvePrincipal(tk),e=>e.statusCode===401);
       await User.updateOne({_id:other._id},{$set:{status:"Suspended"}});await assert.rejects(resolvePrincipal(tokens.other),e=>e.statusCode===403);
@@ -125,20 +128,29 @@ test("Marketplace identity, negotiation, orders, cart and advertising boundaries
     await t.test("merchant onboarding requires separate review and seller promotion is derived from active subscriptions",async()=>{
       const pending=await request("buyer2","/api/auth/merchant-application","POST",{businessName:"Test Business"});assert.equal(pending.status,200);assert.equal(pending.data.user.accountType,"buyer");assert.equal(pending.data.user.canSell,false);
       let response;const res={status(n){this.code=n;return this},json(value){response=value;return this}};
-      await reviewMerchant({params:{id:buyer2._id},body:{action:"approve"},admin:{id:new mongoose.Types.ObjectId()}},res);assert.equal(response.user.accountType,"merchant");assert.equal(response.user.canBuy,false);assert.equal((await request("buyer2","/api/auth/me")).status,401);
+      await reviewMerchant({params:{id:buyer2._id},body:{action:"approve"},admin:{id:new mongoose.Types.ObjectId()}},res);assert.equal(response.user.accountType,"merchant");assert.equal(response.user.canBuy,true);assert.equal((await request("buyer2","/api/auth/me")).status,401);
       const plan=await Plan.findOne({slug:"test"});await Subscription.create({userId:merchant._id,planId:plan._id,scope:"seller_membership",status:"active",endDate:new Date(Date.now()+86400000)});
       const directory=await request("buyer","/api/public/sellers");assert.equal(directory.status,200);assert.equal(directory.data.sellers.find(s=>s.uid===merchant.uid).profileBoost.active,true);
       assert.equal((await request("buyer","/api/public/sellers?q=%5B")).status,200);
+    });
+    await t.test("a buy-only account can switch selling on and keep one login",async()=>{
+      const shopper=await account("shopper","buyer");tokens.shopper=await token(shopper);
+      const before=await request("shopper","/api/auth/me");assert.equal(before.data.user.canSell,false);assert.equal(before.data.user.canStartSelling,true);
+      const started=await request("shopper","/api/auth/start-selling","POST",{businessName:"Shopper Goods"});assert.equal(started.status,200);assert.equal(started.data.user.canSell,true);assert.equal(started.data.user.canBuy,true);
+      assert.equal((await request("shopper","/api/auth/start-selling","POST",{})).status,200); // repeat is harmless
+      assert.equal((await request("shopper","/api/auth/merchant-application","POST",{businessName:"x"})).status,409); // can't downgrade
+      const paused=await account("paused","buyer",{merchantStatus:"suspended"});tokens.paused=await token(paused);
+      assert.equal((await request("paused","/api/auth/start-selling","POST",{})).status,403);
     });
     await t.test("password registration, portal login, token refresh and logout preserve account boundaries",async()=>{
       const send=async(url,body)=>{const r=await fetch(base+url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});return{status:r.status,data:await r.json()}};
       const credentials={name:"New Buyer",email:"new-buyer@test.example",phone:"+265987123456",password:"TestBuyer123!",accountType:"buyer"};
       const created=await send("/api/auth/signup",{...credentials,role:"admin",merchantStatus:"active"});assert.equal(created.status,201);assert.equal(created.data.user.accountType,"buyer");assert.equal(created.data.user.canSell,false);assert.equal(created.data.user.role,"user");
       const login=await send("/api/auth/login",{identifier:credentials.email,password:credentials.password,accountType:"buyer"});assert.equal(login.status,200);assert.equal(login.data.user.canBuy,true);
-      assert.equal((await send("/api/auth/login",{identifier:credentials.email,password:credentials.password,accountType:"merchant"})).status,403);
+      assert.equal((await send("/api/auth/login",{identifier:credentials.email,password:credentials.password,accountType:"merchant"})).status,200);
       const refreshed=await send("/api/auth/refresh",{refreshToken:login.data.refreshToken});assert.equal(refreshed.status,200);assert.equal(refreshed.data.user.accountType,"buyer");
       assert.equal((await send("/api/auth/logout",{refreshToken:refreshed.data.refreshToken})).status,200);await assert.rejects(resolvePrincipal(refreshed.data.token),e=>e.statusCode===401);
-      const seller=await send("/api/auth/signup",{...credentials,name:"New Seller",email:"new-seller@test.example",phone:"+265987123457",accountType:"merchant"});assert.equal(seller.status,201);assert.equal(seller.data.user.canSell,true);assert.equal(seller.data.user.canBuy,false);
+      const seller=await send("/api/auth/signup",{...credentials,name:"New Seller",email:"new-seller@test.example",phone:"+265987123457",accountType:"merchant"});assert.equal(seller.status,201);assert.equal(seller.data.user.canSell,true);assert.equal(seller.data.user.canBuy,true);
     });
     await t.test("migration preserves legacy merchants, is repeatable and supports snapshot rollback", async () => {
       const run = promisify(execFile);
