@@ -1,3 +1,4 @@
+import { formatAmount } from "../../utils/formatPrice.js";
 import React, { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Clipboard, FileUp, Loader2, ShieldCheck } from "lucide-react";
 import nationalBankLogo from "../../assets/payments/national-bank-lockup.png";
@@ -9,7 +10,7 @@ import {
   uploadBankProofOfPayment,
 } from "../../services/membership.service.js";
 import { downloadReceiptHtml, printReceipt } from "../../utils/paymentReceipt.js";
-import { formatCurrencyInput } from "../../utils/currency.js";
+import { formatCurrencyFinal } from "../../utils/currency.js";
 
 const idempotencyKey = (planId = "", scope = "ad_boost") =>
   `bank-${scope}-${planId}-${typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`}`;
@@ -108,7 +109,7 @@ const BankTransferPayment = ({ plan, adId, ad, scope = "ad_boost" }) => {
           </div>
           <div className="rounded-[1.2rem] border border-[#DEE4FF] bg-[#EEF2FF] px-4 py-3 text-left sm:min-w-[10.5rem] sm:text-right">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#2E3192]/60">Amount due</p>
-            <p className="mt-1 whitespace-nowrap text-xl font-bold text-[#1c2454]">MWK {expectedAmount.toLocaleString("en-MW")}</p>
+            <p className="mt-1 whitespace-nowrap text-xl font-bold text-[#1c2454]">MWK {formatAmount(expectedAmount)}</p>
           </div>
         </div>
 
@@ -134,7 +135,7 @@ const BankTransferPayment = ({ plan, adId, ad, scope = "ad_boost" }) => {
         <div className="flex items-center gap-2"><FileUp size={20} className="text-[#2E3192]" /><h3 className="text-lg font-bold text-[#1c2454]">Upload Proof of Payment</h3></div>
         <p className="mt-2 text-sm text-slate-500">Accepted: JPG, PNG or PDF up to 5 MB. Zitheke generates a separate acknowledgement; it does not replace your bank-issued POP.</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <Field label="Amount Paid"><input type="text" inputMode="numeric" required readOnly value={formatCurrencyInput(form.amountPaid)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none" /></Field>
+          <Field label="Amount Paid"><input type="text" inputMode="numeric" required readOnly value={formatCurrencyFinal(form.amountPaid)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none" /></Field>
           <Field label="Payment Date"><input type="date" required value={form.paymentDate} onChange={(e) => setForm({ ...form, paymentDate: e.target.value })} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none" /></Field>
           <Field label="Bank Transaction / Deposit Reference"><input value={form.bankTransactionReference} onChange={(e) => setForm({ ...form, bankTransactionReference: e.target.value })} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none" placeholder="Optional if not shown on POP" /></Field>
           <Field label="Proof of Payment"><input type="file" required={!awaitingReview} accept="image/jpeg,image/png,application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} className="block w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm" /></Field>

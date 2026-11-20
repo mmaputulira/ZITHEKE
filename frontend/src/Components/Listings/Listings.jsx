@@ -161,8 +161,8 @@ const Listings = () => {
 
                   <div className="flex flex-col justify-between flex-1 p-4">
                     <div>
-                      <p className="text-[#2E3192] font-extrabold text-lg">
-                        {ad.price == null ? "Price on request" : formatPrice(ad.price, "MWK ")}
+                      <p className="price-tag text-[#2E3192]">
+                        {ad.price == null ? "Price on request" : formatPrice(ad.price)}
                       </p>
                       <h2 className="font-semibold text-gray-900 text-base truncate mt-1">
                         {ad.title}

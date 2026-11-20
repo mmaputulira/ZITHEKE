@@ -212,8 +212,8 @@ const SearchResults = () => {
 
                 {/* CONTENT */}
                 <div className="p-5">
-                  <p className="text-lg font-semibold text-[#2E3192] mb-1">
-                    {formatPrice(ad.price, "MWK ")}
+                  <p className="price-tag text-[#2E3192] mb-1">
+                    {formatPrice(ad.price)}
                   </p>
 
                   <h3 className="font-medium line-clamp-1 mb-1">

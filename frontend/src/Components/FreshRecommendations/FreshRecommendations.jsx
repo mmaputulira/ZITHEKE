@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { formatPrice } from "../../utils/formatPrice.js";
 import { motion } from "framer-motion";
 import { MapPin, LocateFixed, Loader2, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -461,7 +462,7 @@ const FreshRecommendations = () => {
                       {item.category}
                     </span>
                   ) : (
-                    <span className="truncate">MK {item.price?.toLocaleString()}</span>
+                    <span className="price-tag truncate">{formatPrice(item.price)}</span>
                   )}
                   {["New", "Used"].includes(item.condition) &&
                     !["Services", "Jobs" , "Agriculture"].includes(item.category) && (

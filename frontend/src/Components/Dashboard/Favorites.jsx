@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { formatPrice } from "../../utils/formatPrice.js";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../Components/Sidebar/Sidebar.jsx";
 import { Heart, MapPin, Trash2, FolderOpen } from "lucide-react";
@@ -176,8 +177,8 @@ const Favorites = () => {
                   <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                     <MapPin size={14} /> {item.city || "Unknown"}
                   </p>
-                  <p className="mt-2 font-semibold text-[#1A1D64]">
-                    MK  {item.price?.toLocaleString("en-MW")}
+                  <p className="price-tag mt-2 text-[#1A1D64]">
+                    {formatPrice(item.price)}
                   </p>
                 </div>
               </div>

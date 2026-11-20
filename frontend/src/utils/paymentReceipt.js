@@ -1,3 +1,4 @@
+import { formatAmount } from "./formatPrice.js";
 const esc = (value = "") => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
 
 const formatDate = (value) => {
@@ -18,7 +19,7 @@ export const receiptHtml = (receipt) => `<!doctype html>
 <div class="item"><div class="label">Package</div><div class="value">${esc(receipt?.package?.name)} · ${esc(receipt?.package?.durationDays)} days</div></div>
 <div class="item"><div class="label">Advert</div><div class="value">${esc(receipt?.advert?.title || "—")}</div></div>
 <div class="item"><div class="label">Customer</div><div class="value">${esc(receipt?.customer?.name || receipt?.customer?.email)}</div></div>
-<div class="item"><div class="label">Amount</div><div class="value">${esc(receipt?.currency)} ${Number(receipt?.amount || 0).toLocaleString("en-MW")}</div></div>
+<div class="item"><div class="label">Amount</div><div class="value">${esc(receipt?.currency)} ${formatAmount(receipt?.amount || 0)}</div></div>
 <div class="item"><div class="label">Payment Method</div><div class="value">${esc(receipt?.paymentMethod)}</div></div>
 <div class="item"><div class="label">Created</div><div class="value">${esc(formatDate(receipt?.createdAt))}</div></div>
 </div>

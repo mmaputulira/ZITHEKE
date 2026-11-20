@@ -1,3 +1,4 @@
+import { formatAmount } from "../../utils/formatPrice.js";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -143,7 +144,7 @@ const formatDate = (value) => {
 };
 
 const getDisplayPlanPrice = (plan) =>
-  Number(plan?.price || 0).toLocaleString("en-MW");
+  formatAmount(plan?.price || 0);
 
 const AirtelPaymentModal = ({
   open,

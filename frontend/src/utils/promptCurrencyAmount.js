@@ -1,14 +1,14 @@
 import Swal from "sweetalert2";
-import { digitsOnly, formatCurrencyInput, parseCurrencyInput } from "./currency";
+import { formatCurrencyInput, formatCurrencyFinal, parseCurrencyInput } from "./currency";
 
 export const promptCurrencyAmount = async ({ title, label, placeholder, confirmButtonText = "Continue", initialValue = "" }) => {
   const result = await Swal.fire({
     title,
     input: "text",
     inputLabel: label,
-    inputValue: formatCurrencyInput(initialValue),
-    inputPlaceholder: placeholder ? formatCurrencyInput(placeholder) : "e.g. 150,000",
-    inputAttributes: { inputmode: "numeric", autocomplete: "off" },
+    inputValue: formatCurrencyFinal(initialValue),
+    inputPlaceholder: placeholder ? formatCurrencyFinal(placeholder) : "e.g. 150,000.00",
+    inputAttributes: { inputmode: "decimal", autocomplete: "off" },
     showCancelButton: true,
     confirmButtonText,
     confirmButtonColor: "#2E3192",
@@ -16,9 +16,11 @@ export const promptCurrencyAmount = async ({ title, label, placeholder, confirmB
       const input = Swal.getInput();
       if (!input) return;
       input.addEventListener("input", () => {
-        const digits = digitsOnly(input.value);
-        input.value = formatCurrencyInput(digits);
+        input.value = formatCurrencyInput(input.value);
         input.setSelectionRange(input.value.length, input.value.length);
+      });
+      input.addEventListener("blur", () => {
+        input.value = formatCurrencyFinal(input.value);
       });
     },
     preConfirm: (value) => {

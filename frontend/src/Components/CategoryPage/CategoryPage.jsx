@@ -1,3 +1,4 @@
+import { formatPrice } from "../../utils/formatPrice.js";
 // src/Components/Pages/CategoryPage.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -518,8 +519,8 @@ const CategoryPage = () => {
                     </p>
                     <div className="flex items-center justify-between pt-1">
                       {!["Jobs", "Services"].includes(item.category) && (
-                        <p className="text-sm font-bold text-[#2E3192]">
-                          MK {item.price.toLocaleString("en-MW")}
+                        <p className="price-tag text-[#2E3192]">
+                          {formatPrice(item.price)}
                         </p>
                       )}
                         <p className="text-xs text-gray-400">

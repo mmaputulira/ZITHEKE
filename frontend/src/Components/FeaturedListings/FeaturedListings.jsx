@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { formatPrice } from "../../utils/formatPrice.js";
 import { motion, useReducedMotion } from "framer-motion";
 import axios from "axios";
 import { Eye, MapPin, Loader2 } from "lucide-react";
@@ -146,9 +147,9 @@ const FeaturedListings = () => {
                         {ad.description}
                       </p>
 
-                      <p className="text-[var(--brand)] font-semibold text-lg mb-3 flex items-center justify-between gap-3">
+                      <p className="price-tag text-[var(--brand)] mb-3 flex items-center justify-between gap-3">
                         <span className="truncate">
-                          MK {ad.price?.toLocaleString("en-MW")}
+                          {formatPrice(ad.price)}
                         </span>
                         {["New", "Used"].includes(ad.condition) &&
                           !["Services", "Agriculture"].includes(ad.category) && (

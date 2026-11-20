@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { formatPrice } from "../../utils/formatPrice.js";
 import axios from "axios";
 import { Heart, ChevronRight, Eye } from "lucide-react";
 import { motion } from "framer-motion";
@@ -125,8 +126,8 @@ const FavoritesPreviewSection = () => {
                 </p>
 
                 <div className="mt-2 flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#2E3192]">
-                    MK {item.price?.toLocaleString("en-MW")}
+                  <span className="price-tag text-[#2E3192]">
+                    {formatPrice(item.price)}
                   </span>
                   <span className="text-xs text-gray-400 flex items-center gap-1">
                     <Eye size={12} />

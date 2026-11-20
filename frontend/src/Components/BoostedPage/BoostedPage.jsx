@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { formatPrice } from "../../utils/formatPrice.js";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { LayoutGrid, List, Loader2, MapPin, Search } from "lucide-react";
@@ -188,9 +189,9 @@ const BoostedPage = () => {
                       </span>
                     </div>
 
-                    <p className="mt-1 text-sm font-semibold text-[#3B5BDB]">
+                    <p className="price-tag mt-1 text-[#3B5BDB]">
                       {ad?.price
-                        ? `MWK ${Number(ad.price).toLocaleString()}`
+                        ? formatPrice(ad.price)
                         : "Price on request"}
                     </p>
 
