@@ -197,7 +197,7 @@ const Chats = () => {
   /* ------------------------------------------
      📩 4. Load Messages
   ------------------------------------------- */
-  const { loadMessages, sendMessage, deleteForMe, deleteForEveryone } =
+  const { loadMessages, sendMessage, retryMessage, deleteForMe, deleteForEveryone } =
     useChatMessages({
       userId: user?.uid,
       setMessages,
@@ -832,6 +832,7 @@ const Chats = () => {
                               uid={user.uid}
                               onDeleteMe={deleteForMe}
                               onDeleteEveryone={deleteForEveryone}
+                              onRetry={retryMessage}
                             />
                           </motion.div>
                         ))}

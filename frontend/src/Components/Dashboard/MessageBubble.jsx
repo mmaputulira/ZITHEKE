@@ -10,6 +10,8 @@ import {
   ImageOff,
   VideoOff,
   MoreHorizontal,
+  AlertCircle,
+  RotateCw,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { createPortal } from "react-dom";
@@ -20,6 +22,7 @@ const MessageBubble = ({
   uid,
   onDeleteMe,
   onDeleteEveryone,
+  onRetry,
 
   // ✅ optional (for grouping)
   prevMsg = null,
@@ -399,7 +402,7 @@ const MessageBubble = ({
           {/* ✅ compact meta badge inside bubble (bottom-right) */}
           <div className="absolute bottom-1.5 right-1.5 flex items-center gap-2">
             {/* TEMP STATUS LABEL */}
-            {!isDeleted && isMe && isTemp && !msg.isDelivered && !msg.isRead && (
+            {!isDeleted && isMe && isTemp && !msg.sendFailed && !msg.isDelivered && !msg.isRead && (
               <span
                 className={`px-2 py-1 rounded-full text-[11px] tabular-nums ${metaBadgeClass}`}
               >
@@ -416,6 +419,20 @@ const MessageBubble = ({
           </div>
         </motion.div>
       </div>
+
+      {isMe && msg.sendFailed && (
+        <div className="mt-1 flex justify-end">
+          <button
+            type="button"
+            onClick={() => onRetry?.(msg)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700 ring-1 ring-red-200 hover:bg-red-100"
+          >
+            <AlertCircle size={13} />
+            <span>{msg.sendError || "Message not sent. Tap to retry."}</span>
+            {onRetry && <RotateCw size={12} />}
+          </button>
+        </div>
+      )}
 
       {/* DELETE MODAL (portal so it is not trapped inside media transforms) */}
       {menuOpen &&

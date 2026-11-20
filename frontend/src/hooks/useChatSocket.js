@@ -295,6 +295,16 @@ export const useChatSocket = ({
     socket.on("message:deliver-batch", handleOfflineBatch);
     socket.on("message:batch-deliver", handleOfflineBatch);
 
+    // Rooms are lost when the socket reconnects (for example after the access
+    // token is renewed). Rejoin the open conversation so typing and read
+    // receipts keep working.
+    const rejoinOpenConversation = () => {
+      if (joinedRoomRef.current) {
+        socket.emit("conversation:join", { conversationId: joinedRoomRef.current });
+      }
+    };
+    socket.on("connect", rejoinOpenConversation);
+
     /* =====================================================
        🧹 CLEANUP (DO NOT DISCONNECT SOCKET)
     ===================================================== */
@@ -313,6 +323,7 @@ export const useChatSocket = ({
       socket.off("message:delivered");
       socket.off("message:read");
       socket.off("message:update-seen");
+      socket.off("connect", rejoinOpenConversation);
 
       // clear timers
       if (typingEmitTimerRef.current) {
