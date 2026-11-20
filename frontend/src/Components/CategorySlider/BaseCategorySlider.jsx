@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, EffectFade } from "swiper/modules";
+import { Autoplay, EffectFade, FreeMode, Mousewheel, Keyboard, A11y } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/effect-fade";
+import "swiper/css/free-mode";
 import { motion } from "framer-motion";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   Sparkles,
-  Hand,
   Heart,
   Eye,
   MapPin,
@@ -275,13 +275,13 @@ const BaseCategorySlider = ({ categoryTitle, category }) => {
             {categoryTitle}
           </h2>
 
-          <div className="mt-1 flex items-center gap-2 text-sm text-[color:var(--muted)]">
-            <span className="inline-flex items-center gap-1">
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-[color:var(--muted)]">
+            <span className="inline-flex items-center gap-1 whitespace-nowrap">
               <Sparkles size={14} className="text-[color:var(--brand)]" />
               Curated picks near you
             </span>
             <span className="h-1 w-1 rounded-full bg-[color:var(--muted)]/40" />
-            <span className="font-medium">
+            <span className="font-medium whitespace-nowrap">
               {loading
                 ? "Loading…"
                 : `${ads.length} result${ads.length === 1 ? "" : "s"}`}
@@ -304,25 +304,13 @@ const BaseCategorySlider = ({ categoryTitle, category }) => {
         </div>
       </div>
 
-      {/* ✅ Swipe hint on mobile + drag indicator */}
+      {/* Desktop hint only. On phones the next card peeks in instead. */}
       {!loading && ads.length > 0 && (
-        <div className="flex items-center justify-between mb-4">
+        <div className="hidden sm:flex items-center justify-between mb-4">
           <div className="text-xs text-[color:var(--muted)] hidden sm:block">
             Hover to preview • Tap to open
           </div>
 
-          <div className="sm:hidden flex items-center gap-2 text-xs text-[color:var(--muted)]">
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/60 border border-[color:var(--stroke)]">
-              <Hand size={14} className="text-[color:var(--brand)]" />
-              Drag
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <span className="h-[6px] w-[36px] rounded-full bg-[color:var(--brand)]/25 overflow-hidden relative">
-                <span className="absolute left-1 top-1/2 -translate-y-1/2 h-[4px] w-[14px] rounded-full bg-[color:var(--brand)]/70 animate-pulse" />
-              </span>
-              <span>Swipe</span>
-            </span>
-          </div>
         </div>
       )}
 
@@ -360,8 +348,13 @@ const BaseCategorySlider = ({ categoryTitle, category }) => {
           <div className="flex">
             <button
               type="button"
-              onClick={() => mainSwiperRef.current?.slidePrev()}
-              className="inline-flex alinafe-nav-btn alinafe-prev absolute left-2 top-[25%] -translate-y-1/2 sm:left-0 z-10 h-10 w-10 sm:h-[52px] sm:w-[52px]"
+              onClick={() => {
+                const sw = mainSwiperRef.current;
+                if (!sw) return;
+                if (sw.isBeginning) sw.slideTo(sw.slides.length - 1);
+                else sw.slidePrev();
+              }}
+              className="max-sm:!hidden inline-flex alinafe-nav-btn alinafe-prev absolute left-2 top-[25%] -translate-y-1/2 sm:left-0 z-10 h-10 w-10 sm:h-[52px] sm:w-[52px]"
               aria-label="Previous"
             >
               <ArrowRight size={18} className="rotate-180" />
@@ -369,26 +362,38 @@ const BaseCategorySlider = ({ categoryTitle, category }) => {
 
             <button
               type="button"
-              onClick={() => mainSwiperRef.current?.slideNext()}
-              className="inline-flex alinafe-nav-btn alinafe-next absolute right-2 top-[25%] -translate-y-1/2 sm:right-0 z-10 h-10 w-10 sm:h-[52px] sm:w-[52px]"
+              onClick={() => {
+                const sw = mainSwiperRef.current;
+                if (!sw) return;
+                if (sw.isEnd) sw.slideTo(0);
+                else sw.slideNext();
+              }}
+              className="max-sm:!hidden inline-flex alinafe-nav-btn alinafe-next absolute right-2 top-[25%] -translate-y-1/2 sm:right-0 z-10 h-10 w-10 sm:h-[52px] sm:w-[52px]"
               aria-label="Next"
             >
               <ArrowRight size={18} />
             </button>
           </div>
 
+          {/* Smooth, momentum scrolling: flick on phones (the next card peeks in
+              so people can see there is more), drag or trackpad/mouse-wheel
+              swipe on desktop, arrow keys when focused. Cards snap into place. */}
           <Swiper
-            slidesPerView={1} // ✅ mobile: only 1 card
-            spaceBetween={10} // tighter spacing for mobile
-            loop
-            allowTouchMove={true}
-            simulateTouch={true}
+            modules={[FreeMode, Mousewheel, Keyboard, A11y]}
+            slidesPerView={1.18}
+            spaceBetween={12}
+            freeMode={{ enabled: true, sticky: true, momentumRatio: 0.6, momentumVelocityRatio: 0.7 }}
+            mousewheel={{ forceToAxis: true, sensitivity: 0.8, thresholdDelta: 6 }}
+            keyboard={{ enabled: true, onlyInViewport: true }}
+            grabCursor
+            watchOverflow
+            resistanceRatio={0.6}
             onSwiper={(swiper) => {
               mainSwiperRef.current = swiper;
             }}
             breakpoints={{
               480: {
-                slidesPerView: 1,
+                slidesPerView: 1.45,
                 spaceBetween: 12,
               },
               640: {
