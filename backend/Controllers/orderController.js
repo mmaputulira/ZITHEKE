@@ -7,8 +7,9 @@ export const createOrder = async (req,res) => {
   catch(error) { fail(res,error); }
 };
 export const listMyOrders = async (req,res) => {
-  try { const seller = req.user.accountType === "merchant"; const role = seller ? "seller" : "buyer";
-    if (req.query.role && req.query.role !== role) return res.status(403).json({ message: "Use your own account's order history." });
+  try { // One account can both buy and sell, so the caller picks which history to view.
+    const role = req.query.role === "seller" || (!req.query.role && req.user.accountType === "merchant") ? "seller" : "buyer";
+    const seller = role === "seller";
     const query = seller ? { sellerUid: req.user.uid } : { buyerUid: req.user.uid };
     res.json({ orders: await populateOrder(Order.find(query).sort({ createdAt:-1 }).limit(200)), role });
   } catch(error) { fail(res,error); }

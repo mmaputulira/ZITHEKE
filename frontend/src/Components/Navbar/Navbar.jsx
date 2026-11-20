@@ -17,7 +17,9 @@ import {
   Phone,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext.jsx";
+import { useAuth, homeForMode } from "../../context/AuthContext.jsx";
+import { ModeSwitch } from "../AccountMode/ModePicker.jsx";
+import { LiveAvatar } from "../AccountMode/Avatars.jsx";
 import useMembershipAccess from "../../hooks/useMembershipAccess.js";
 import SearchBar from "../SearchBar/SearchBar.jsx";
 import Swal from "sweetalert2";
@@ -27,7 +29,12 @@ import {
 } from "../../utils/avatar.js";
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, mode, setMode } = useAuth();
+  // "Sell" is always one tap away: same account, switch to the seller side.
+  const goSell = () => {
+    if (user?.canSell) setMode("seller");
+    navigate("/dashboard/createAd");
+  };
   const { access } = useMembershipAccess();
   const navigate = useNavigate();
 
@@ -102,6 +109,7 @@ const Navbar = () => {
      AVATAR
   ========================= */
   const getAvatar = () => {
+    if (user) return <LiveAvatar user={user} mode={mode} size={40} />;
     const avatarSrc = getUserAvatarSrc(user);
     return (
       <img
@@ -163,7 +171,7 @@ const Navbar = () => {
                   onClick={() => navigate("/login")}
                   className="text-white font-semibold"
                 >
-                  Seller Login
+                  Sign in
                 </button>
                 <button
                   onClick={() => navigate("/signup")}
@@ -174,10 +182,10 @@ const Navbar = () => {
               </>
             ) : (
               <>
-                {user.accountType === "merchant" && showMembershipBadge && (
+                {mode === "seller" && showMembershipBadge && (
                   <button
                     type="button"
-                    onClick={() => navigate(user.accountType === "buyer" ? "/buyer/account/cart" : "/dashboard/my-ads")}
+                    onClick={() => navigate("/dashboard/my-ads")}
                     className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
                       access?.isPremium
                         ? "border-[#f6c96b]/40 bg-[#f6c96b]/12 text-[#f6c96b]"
@@ -189,9 +197,9 @@ const Navbar = () => {
                   </button>
                 )}
                 {[
-                  { Icon: Bookmark, onClick: () => navigate(user.accountType === "buyer" ? "/buyer/account/favorites" : "/dashboard/sales") },
+                  { Icon: Bookmark, onClick: () => navigate(mode === "buyer" ? "/buyer/account/favorites" : "/dashboard/sales") },
                   { Icon: MessageSquare, onClick: () => navigate("/chats") },
-                  { Icon: Bell, onClick: () => navigate(user.accountType === "buyer" ? "/buyer/account/notifications" : "/dashboard/notifications") },
+                  { Icon: Bell, onClick: () => navigate(mode === "buyer" ? "/buyer/account/notifications" : "/dashboard/notifications") },
                 ].map(({ Icon, onClick }, i) => (
                   <button
                     key={i}
@@ -213,20 +221,23 @@ const Navbar = () => {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute right-0 top-12 bg-white rounded-xl shadow-xl w-48 overflow-hidden"
+                        className="absolute right-0 top-12 bg-white rounded-xl shadow-xl w-60 overflow-hidden"
                       >
+                        <div className="border-b border-gray-100">
+                          <ModeSwitch onSwitched={() => setDropdownOpen(false)} />
+                        </div>
                         <ul className="text-sm">
                           <li
-                            onClick={() => navigate(user.accountType === "buyer" ? "/buyer/account" : "/dashboard")}
+                            onClick={() => navigate(homeForMode(mode))}
                             className="px-4 py-3 hover:bg-[#2E3192]/10 cursor-pointer flex gap-2"
                           >
                             <User size={16} /> Dashboard
                           </li>
                           <li
-                            onClick={() => navigate(user.accountType === "buyer" ? "/buyer/account/cart" : "/dashboard/my-ads")}
+                            onClick={() => navigate(mode === "buyer" ? "/buyer/account/cart" : "/dashboard/my-ads")}
                             className="px-4 py-3 hover:bg-[#2E3192]/10 cursor-pointer flex gap-2"
                           >
-                            <Bookmark size={16} /> {user.accountType === "buyer" ? "My Cart" : "My Ads"}
+                            <Bookmark size={16} /> {mode === "buyer" ? "My Cart" : "My Ads"}
                           </li>
                           <li
                             onClick={handleLogout}
@@ -241,11 +252,11 @@ const Navbar = () => {
                 </div>
 
                 <button
-                  onClick={() => navigate(user.accountType === "buyer" ? "/buyer/account/cart" : "/dashboard/createAd")}
+                  onClick={goSell}
                   className="flex items-center gap-2 bg-[#F4B400] text-[#1A237E] px-5 py-2.5 rounded-full shadow-md hover:bg-[#e2a500] transition"
                 >
                   <PlusCircle size={20} />
-                  {user.accountType === "buyer" ? "My Cart" : "Sell"}
+                  Sell
                 </button>
               </>
             )}
@@ -349,17 +360,20 @@ const Navbar = () => {
               <div className="border-t pt-4">
                 {user ? (
                   <>
+                    <div className="-mx-3 mb-2">
+                      <ModeSwitch onSwitched={() => setSidebarOpen(false)} />
+                    </div>
                     <button
-                      onClick={() => navigateFromSidebar(user.accountType === "buyer" ? "/buyer/account" : "/dashboard")}
+                      onClick={() => navigateFromSidebar(homeForMode(mode))}
                       className="w-full bg-[#2E3192]/10 text-[#2E3192] py-2 rounded-full"
                     >
                       Dashboard
                     </button>
                     <button
-                      onClick={() => navigateFromSidebar(user.accountType === "buyer" ? "/buyer/account/cart" : "/dashboard/createAd")}
+                      onClick={() => { if (user?.canSell) setMode("seller"); navigateFromSidebar("/dashboard/createAd"); }}
                       className="w-full bg-[#2E3192] text-white py-2 rounded-full mt-2"
                     >
-                      {user.accountType === "buyer" ? "My Cart" : "+ Sell Item"}
+                      + Sell Item
                     </button>
                     <button
                       onClick={handleLogout}

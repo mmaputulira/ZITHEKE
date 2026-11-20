@@ -57,7 +57,7 @@ export const transitionOrder = async ({ principal, orderId, action, note = "" })
     await session.withTransaction(async () => {
       const order = await Order.findById(orderId).session(session);
       if (!order) throw policyError(404, "Order not found.");
-      const buyer = principal.accountType === "buyer" && order.buyerUid === principal.uid && principal.status === "Active";
+      const buyer = order.buyerUid === principal.uid && principal.status === "Active";
       const seller = principal.accountType === "merchant" && order.sellerUid === principal.uid && principal.status === "Active" && principal.merchantStatus === "active";
       if (!buyer && !seller) throw policyError(403, "You cannot manage this order.");
       const now = new Date();

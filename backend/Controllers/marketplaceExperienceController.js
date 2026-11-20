@@ -41,8 +41,8 @@ export const listOffers = async (req, res) => {
   try {
     const userUid = uid(req);
     if (!userUid) return bad(res, 401, "Unauthorized");
-    const sent = await Offer.find({ buyerUid: userUid, ...(req.user.accountType === "merchant" ? { _id:null } : {}) }).populate("adId", "title price images city ownerName").sort({ createdAt: -1 }).lean();
-    const received = await Offer.find({ sellerUid: userUid, ...(req.user.accountType === "buyer" ? { _id:null } : {}) }).populate("adId", "title price images city ownerName").sort({ createdAt: -1 }).lean();
+    const sent = await Offer.find({ buyerUid: userUid }).populate("adId", "title price images city ownerName").sort({ createdAt: -1 }).lean();
+    const received = await Offer.find({ sellerUid: userUid }).populate("adId", "title price images city ownerName").sort({ createdAt: -1 }).lean();
     const uids = [...new Set([...sent.flatMap((o) => [o.buyerUid, o.sellerUid]), ...received.flatMap((o) => [o.buyerUid, o.sellerUid])])];
     const people = await User.find({ uid: { $in: uids } }).select("uid name photoURL").lean();
     const peopleMap = new Map(people.map((p) => [p.uid, p]));

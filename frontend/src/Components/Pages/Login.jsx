@@ -18,14 +18,16 @@ import {
   Phone,
   KeyRound,
 } from "lucide-react";
-import { useAuth } from "../../context/AuthContext.jsx";
+import { useAuth, homeForMode } from "../../context/AuthContext.jsx";
 import TurnstileWidget from "../ui/TurnstileWidget.jsx";
 
 const Login = ({ accountType = "merchant" }) => {
   const location = useLocation();
   const buyerPortal = accountType === "buyer";
-  const destination = location.state?.returnTo?.startsWith("/ad/") ? location.state.returnTo : buyerPortal ? "/buyer/account" : "/dashboard";
-  const { setUser } = useAuth();
+  // One account for buying and selling: after sign-in the person picks
+  // Customer or Seller, so start on the side they used last.
+  const destination = location.state?.returnTo?.startsWith("/ad/") ? location.state.returnTo : homeForMode(savedMode);
+  const { setUser, requestModeChoice, mode: savedMode } = useAuth();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
@@ -98,10 +100,11 @@ const Login = ({ accountType = "merchant" }) => {
         photoURL: data.user.photoURL || "",
         role: data.user.role || "user",
         phone: data.user.phone || "",
-        accountType:data.user.accountType, merchantStatus:data.user.merchantStatus, canSell:data.user.canSell, canBuy:data.user.canBuy, status:data.user.status,
+        accountType:data.user.accountType, merchantStatus:data.user.merchantStatus, canSell:data.user.canSell, canBuy:data.user.canBuy, canStartSelling:data.user.canStartSelling, status:data.user.status,
       };
       localStorage.setItem("authUser", JSON.stringify(mergedUser));
       setUser(mergedUser);
+      requestModeChoice();
     }
   };
 
@@ -400,7 +403,7 @@ const Login = ({ accountType = "merchant" }) => {
           <div className="p-8 sm:p-10">
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-800">
-                {buyerPortal ? "Buyer login" : "Seller login"}
+                Sign in to Zitheke
               </h1>
               <p className="text-sm text-gray-500">
                 Use your email or phone with your password
@@ -470,7 +473,7 @@ const Login = ({ accountType = "merchant" }) => {
                 </div>
               </div>
 
-              <button type="button" onClick={() => navigate(buyerPortal ? "/login" : "/buyer/login")} className="mb-4 text-sm font-semibold text-[#2E3192]">{buyerPortal ? "Looking to sell? Seller login" : "Looking to buy? Buyer login"}</button>
+              <p className="mb-4 text-xs text-gray-500">One account to buy and sell. You can switch between Customer and Seller after signing in.</p>
           {error && (
                 <p className="text-red-600 text-xs font-medium text-center bg-red-50 py-2 rounded-lg border border-red-100">
                   {error}

@@ -26,13 +26,18 @@ export const validateEngagement = async ({ senderId, receiverId, adId }) => {
   if (!senderId || !receiverId || senderId === receiverId) throw policyError(400, "Choose a different marketplace participant.");
   const users = await User.find({ uid: { $in: [senderId, receiverId] } }).lean();
   const sender = users.find(u => u.uid === senderId), receiver = users.find(u => u.uid === receiverId);
-  const merchant = isActiveMerchant(sender) ? sender : isActiveMerchant(receiver) ? receiver : null;
-  const buyer = isActiveBuyer(sender) ? sender : isActiveBuyer(receiver) ? receiver : null;
-  if (!merchant || !buyer) throw policyError(403, "Marketplace conversations require an active buyer and merchant.");
-  let ad = null;
+  if (!isActiveBuyer(sender) || !isActiveBuyer(receiver)) throw policyError(403, "This person can't receive messages right now.");
+  // With one account for buying and selling, the seller in a conversation is
+  // the listing owner. Without a listing, it is whichever side sells.
+  let ad = null, merchant = null;
   if (adId) {
-    ad = await Ad.findOne({ _id: adId, ownerUid: merchant.uid, status: { $in: ["Approved", "Sold"] } }).lean();
-    if (!ad) throw policyError(409, "This listing is unavailable or does not belong to the merchant.");
+    ad = await Ad.findOne({ _id: adId, ownerUid: { $in: [senderId, receiverId] }, status: { $in: ["Approved", "Sold"] } }).lean();
+    if (!ad) throw policyError(409, "This listing is no longer available.");
+    merchant = ad.ownerUid === senderId ? sender : receiver;
+  } else {
+    merchant = isActiveMerchant(receiver) ? receiver : isActiveMerchant(sender) ? sender : null;
   }
+  if (!isActiveMerchant(merchant)) throw policyError(403, "This seller can't receive messages right now.");
+  const buyer = merchant.uid === senderId ? receiver : sender;
   return { merchant, buyer, ad, sender, receiver };
 };

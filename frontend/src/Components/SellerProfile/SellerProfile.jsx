@@ -109,13 +109,12 @@ const SellerProfile = () => {
   }, [sellerId]);
 
   useEffect(() => {
-    if (user?.accountType !== "buyer" || !user?.uid || !sellerId || user.uid === sellerId) return;
+    if (!user?.canBuy || !user?.uid || !sellerId || user.uid === sellerId) return;
     api.get(`/marketplace/follows/${sellerId}/status`).then((r) => { setFollowing(Boolean(r.data?.following)); setFollowers(Number(r.data?.followers || 0)); }).catch(() => {});
   }, [user?.uid, sellerId]);
 
   const toggleFollow = async () => {
     if (!user) return navigate("/buyer/login");
-    if (user.accountType !== "buyer") return;
     if (user.uid === sellerId) return;
     const r = await api.post("/marketplace/follows/toggle", { sellerUid: sellerId });
     setFollowing(Boolean(r.data?.following));
