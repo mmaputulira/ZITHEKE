@@ -5,7 +5,7 @@ import axios from "axios";
 import { Eye, MapPin, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, Pagination } from "swiper/modules";
+import { Autoplay, Pagination, Mousewheel, A11y } from "swiper/modules";
 import {
   getCardImageOrFallback,
   getPrimaryImage,
@@ -92,14 +92,17 @@ const FeaturedListings = () => {
           <p className="text-center text-gray-500">No featured ads yet.</p>
         ) : (
           <Swiper
-            modules={[Autoplay, Pagination]}
-            autoplay={{ delay: 3500, disableOnInteraction: false }}
+            modules={[Autoplay, Pagination, Mousewheel, A11y]}
+            autoplay={{ delay: 3500, disableOnInteraction: false, pauseOnMouseEnter: true }}
+            mousewheel={{ forceToAxis: true, sensitivity: 0.8, thresholdDelta: 6 }}
+            speed={550}
             pagination={{ clickable: true }}
             spaceBetween={24}
             loop
             grabCursor
             breakpoints={{
-              320: { slidesPerView: 1 },
+              0: { slidesPerView: 1.15, spaceBetween: 14 },
+              480: { slidesPerView: 1.4, spaceBetween: 16 },
               640: { slidesPerView: 2 },
               1024: { slidesPerView: 3 },
               1280: { slidesPerView: 4 },
