@@ -343,9 +343,18 @@ io.use(async (socket, next) => {
 io.on("connection", async (socket) => {
   const userId = socket.userId;
   // Revalidate every incoming event so revoked sessions cannot keep using an open socket.
-  socket.use(async (_event, next) => {
+  socket.use(async (packet, next) => {
     try { socket.principal = await resolvePrincipal(socket.handshake.auth?.token); next(); }
-    catch { socket.disconnect(true); next(new Error("Session unavailable")); }
+    catch {
+      // Tell the app straight away so it can resend over HTTP with a renewed
+      // token, instead of waiting for an answer that never comes.
+      const ack = Array.isArray(packet) ? packet[packet.length - 1] : null;
+      if (typeof ack === "function") {
+        try { ack({ success: false, error: "Session expired" }); } catch {}
+      }
+      socket.disconnect(true);
+      next(new Error("Session unavailable"));
+    }
   });
 
   console.log(`🟢 User Connected: ${userId}`);
@@ -478,6 +487,12 @@ io.on("connection", async (socket) => {
         clientTempId,
       } = msg;
   
+      // Idempotent resend: return the copy already saved for this temp id.
+      if (clientTempId && typeof clientTempId === "string") {
+        const existing = await Message.findOne({ senderId, clientTempId }).lean();
+        if (existing) return cb({ success: true, message: existing });
+      }
+
       /* -------------------------------
          PREVIEW TEXT
       -------------------------------- */

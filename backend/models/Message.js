@@ -151,6 +151,11 @@ messageSchema.index({ conversationId: 1, createdAt: 1 });
 // Inbox queries
 messageSchema.index({ receiverId: 1, isRead: 1 });
 messageSchema.index({ senderId: 1, createdAt: -1 });
+// Lets a resent message be matched to the copy already saved.
+messageSchema.index(
+  { senderId: 1, clientTempId: 1 },
+  { partialFilterExpression: { clientTempId: { $type: "string" } } }
+);
 
 // Delete filtering
 messageSchema.index({ deletedFor: 1 });

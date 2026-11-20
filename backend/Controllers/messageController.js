@@ -154,6 +154,13 @@ export const saveMessage = async (req, res) => {
       return res.status(403).json({ error: "Access denied" });
     }
 
+    // ✅ idempotent retry: the app may resend over HTTP when the live
+    // connection did not confirm in time. Return the copy we already saved.
+    if (clientTempId && typeof clientTempId === "string") {
+      const existing = await Message.findOne({ senderId, clientTempId }).lean();
+      if (existing) return res.status(200).json(existing);
+    }
+
     // ✅ rate guard
     const now = Date.now();
     const last = lastSendAt.get(senderId) || 0;

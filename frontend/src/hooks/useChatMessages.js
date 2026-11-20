@@ -1,7 +1,23 @@
 // src/hooks/useChatMessages.js
-import axios from "axios";
+import api from "../api/axios.js";
 
-const BASE = "/api";
+// How long to wait for the live connection to confirm a message before
+// sending it the ordinary way instead.
+const SOCKET_ACK_TIMEOUT_MS = 8000;
+
+const friendlySendError = (err) => {
+  const status = err?.response?.status;
+  const serverMessage = err?.response?.data?.message || err?.response?.data?.error || err?.message || "";
+  if (!navigator.onLine) return "You're offline. Check your connection and tap to retry.";
+  if (status === 401) return "Your session has ended. Please sign in again.";
+  if (status === 429) return "You're sending messages too quickly. Wait a moment and retry.";
+  if (/marketplace conversations require|different marketplace participant/i.test(serverMessage)) {
+    return "This person can't receive messages right now.";
+  }
+  if (/unavailable|does not belong/i.test(serverMessage)) return "This listing is no longer available.";
+  if (status && status < 500 && serverMessage) return serverMessage;
+  return "Message not sent. Tap to retry.";
+};
 
 /**
  * useChatMessages
@@ -18,12 +34,6 @@ export const useChatMessages = ({
   setConversations,
   socketRef,
 }) => {
-  const authHeader = {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-  };
-
   /* =====================================================
      🔁 HELPERS
   ===================================================== */
@@ -63,10 +73,7 @@ export const useChatMessages = ({
     if (before) qs.append("before", before);
     if (limit) qs.append("limit", limit);
 
-    const res = await axios.get(
-      `${BASE}/messages/${conversationId}?${qs.toString()}`,
-      authHeader
-    );
+    const res = await api.get(`/messages/${conversationId}?${qs.toString()}`);
 
     const fetched = res.data || [];
 
@@ -83,11 +90,7 @@ export const useChatMessages = ({
     });
 
     // 🔹 mark as read
-    await axios.put(
-      `${BASE}/conversations/${conversationId}/mark-read/${userId}`,
-      {},
-      authHeader
-    );
+    await api.put(`/conversations/${conversationId}/mark-read/${userId}`, {});
 
     setConversations((prev) =>
       prev.map((c) =>
@@ -122,7 +125,7 @@ export const useChatMessages = ({
       };
     }
 
-    const tempId = "tmp_" + Date.now();
+    const tempId = `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     const data = {
       senderId: userId,
@@ -154,59 +157,99 @@ export const useChatMessages = ({
 
     clearText?.();
 
-    /* =========================
-       1️⃣ SOCKET SEND (PRIMARY)
-    ========================= */
-    if (socketRef?.current && socketRef.current.connected) {
-      socketRef.current.emit("message:send", data, (ack) => {
-        if (!ack || !ack.success || !ack.message) {
-          console.warn("❌ Socket send failed", ack);
-          return;
-        }
+    const applySaved = (saved) =>
+      setMessages((prev) => {
+        const replaced = replaceTempMessage(prev, saved);
+        if (replaced !== prev) return replaced;
+        if (isDuplicate(prev, saved)) return prev;
+        return [...prev, saved];
+      });
 
-        setMessages((prev) => {
-          const replaced = replaceTempMessage(prev, ack.message);
-          if (replaced !== prev) return replaced;
-          if (isDuplicate(prev, ack.message)) return prev;
-          return [...prev, ack.message];
+    const markFailed = (err) => {
+      console.warn("Message send failed:", err);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.clientTempId === tempId
+            ? { ...m, sendFailed: true, sendError: friendlySendError(err), retryPayload: { data } }
+            : m
+        )
+      );
+    };
+
+    await deliver(data, applySaved, markFailed);
+  };
+
+  /* =====================================================
+     📮 DELIVER: live connection first, ordinary request
+     as fallback. Every path ends in "saved" or "failed",
+     so a message can no longer sit on "Sending..." forever.
+  ===================================================== */
+  const sendOverHttp = async (data) => {
+    const res = await api.post("/messages", data);
+    if (!res?.data) throw new Error("Empty response");
+    return res.data;
+  };
+
+  const deliver = async (data, onSaved, onFailed) => {
+    const socket = socketRef?.current;
+
+    if (socket && socket.connected) {
+      const ack = await new Promise((resolve) => {
+        socket.timeout(SOCKET_ACK_TIMEOUT_MS).emit("message:send", data, (err, response) => {
+          resolve(err ? null : response);
         });
       });
 
-      return;
-    }
+      if (ack?.success && ack.message) return onSaved(ack.message);
 
-    /* =========================
-       2️⃣ HTTP FALLBACK
-    ========================= */
-    try {
-      const res = await axios.post(
-        `${BASE}/messages`,
-        data,
-        authHeader
-      );
-
-      if (res?.data) {
-        setMessages((prev) => {
-          const replaced = replaceTempMessage(prev, res.data);
-          if (replaced !== prev) return replaced;
-          if (isDuplicate(prev, res.data)) return prev;
-          return [...prev, res.data];
-        });
+      // Rejected by the server for a business reason: show it, don't resend.
+      if (ack && ack.error && !/unauthori|session/i.test(ack.error)) {
+        return onFailed({ message: ack.error, response: { status: 400, data: { message: ack.error } } });
       }
-    } catch (err) {
-      console.error("❌ HTTP send failed:", err);
+      // No answer (connection dropped or token expired): fall through to HTTP.
     }
+
+    try {
+      onSaved(await sendOverHttp(data));
+    } catch (err) {
+      onFailed(err);
+    }
+  };
+
+  /* =====================================================
+     🔁 RETRY A FAILED MESSAGE
+  ===================================================== */
+  const retryMessage = async (failedMsg) => {
+    const data = failedMsg?.retryPayload?.data;
+    if (!data) return;
+    const tempId = data.clientTempId;
+
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.clientTempId === tempId ? { ...m, sendFailed: false, sendError: "" } : m
+      )
+    );
+
+    await deliver(
+      data,
+      (saved) =>
+        setMessages((prev) => replaceTempMessage(prev, saved)),
+      (err) =>
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.clientTempId === tempId
+              ? { ...m, sendFailed: true, sendError: friendlySendError(err) }
+              : m
+          )
+        )
+    );
   };
 
   /* =====================================================
      🗑️ DELETE FOR ME
   ===================================================== */
   const deleteForMe = async (messageId) => {
-    await axios.put(
-      `${BASE}/messages/delete-me/${messageId}`,
-      {},
-      authHeader
-    );
+    await api.put(`/messages/delete-me/${messageId}`, {});
 
     setMessages((prev) =>
       prev.filter((m) => m._id !== messageId)
@@ -237,11 +280,7 @@ export const useChatMessages = ({
 
     // backend confirm
     try {
-      await axios.put(
-        `${BASE}/messages/delete-everyone/${messageId}`,
-        {},
-        authHeader
-      );
+      await api.put(`/messages/delete-everyone/${messageId}`, {});
     } catch (err) {
       console.error("Delete for everyone failed:", err);
     }
@@ -275,6 +314,7 @@ export const useChatMessages = ({
   return {
     loadMessages,
     sendMessage,
+    retryMessage,
     deleteForMe,
     deleteForEveryone,
 
