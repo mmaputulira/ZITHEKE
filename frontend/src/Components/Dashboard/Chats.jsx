@@ -105,33 +105,68 @@ const EmptyState = ({ onOpenSidebar }) => {
 /* ------------------------------------------
   Typing Indicator (dots + subtitle “typing…”)
 ------------------------------------------- */
-const TypingIndicator = () => {
+const TypingDot = ({ delay }) => (
+  <motion.span
+    className="h-2 w-2 rounded-full bg-slate-700/70"
+    animate={{ y: [0, -4, 0], opacity: [0.5, 1, 0.5] }}
+    transition={{ duration: 0.7, repeat: Infinity, delay }}
+  />
+);
+
+/* The other person's face pops up beside the "typing" bubble. */
+const TypingIndicator = ({ photo, name }) => {
   return (
-    <div className="flex items-end gap-3 px-2 py-1">
-      <div className="rounded-2xl bg-white/60 backdrop-blur-xl border border-white/60 shadow px-4 py-3">
+    <motion.div
+      initial={{ opacity: 0, y: 12, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 420, damping: 26 } }}
+      exit={{ opacity: 0, y: 8, scale: 0.9, transition: { duration: 0.15 } }}
+      className="flex items-end gap-2 px-1 py-1"
+    >
+      <motion.div
+        initial={{ scale: 0, rotate: -20 }}
+        animate={{ scale: 1, rotate: 0, transition: { type: "spring", stiffness: 520, damping: 18 } }}
+        className="relative h-8 w-8 shrink-0"
+      >
+        <motion.span
+          className="absolute -inset-1 rounded-full bg-[#2E3192]/20"
+          animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0, 0.6] }}
+          transition={{ duration: 1.6, repeat: Infinity }}
+        />
+        <img
+          src={avatarUrl(photo)}
+          onError={handleAvatarFallback}
+          alt={name || "typing"}
+          className="relative h-8 w-8 rounded-full object-cover ring-2 ring-white shadow"
+        />
+      </motion.div>
+      <div className="rounded-2xl rounded-bl-md bg-white/80 backdrop-blur-xl border border-white/60 shadow px-4 py-3">
         <div className="flex items-center gap-1.5">
-          <span className="sr-only">typing</span>
-          <motion.span
-            className="h-2 w-2 rounded-full bg-slate-700/70"
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
-          />
-          <motion.span
-            className="h-2 w-2 rounded-full bg-slate-700/70"
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 0.6, repeat: Infinity, delay: 0.12 }}
-          />
-          <motion.span
-            className="h-2 w-2 rounded-full bg-slate-700/70"
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 0.6, repeat: Infinity, delay: 0.24 }}
-          />
+          <span className="sr-only">{name ? `${name} is typing` : "typing"}</span>
+          <TypingDot delay={0} />
+          <TypingDot delay={0.14} />
+          <TypingDot delay={0.28} />
         </div>
-        <div className="mt-2 text-[11px] text-slate-500">typing…</div>
       </div>
-    </div>
+    </motion.div>
   );
 };
+
+/* Incoming messages show the sender's avatar on the last bubble of each group. */
+const IncomingAvatar = ({ photo, name, show }) => (
+  <div className="w-8 shrink-0 self-end mb-1">
+    {show && (
+      <motion.img
+        initial={{ scale: 0, y: 8 }}
+        animate={{ scale: 1, y: 0, transition: { type: "spring", stiffness: 520, damping: 20 } }}
+        whileHover={{ scale: 1.12, rotate: -4 }}
+        src={avatarUrl(photo)}
+        onError={handleAvatarFallback}
+        alt={name || ""}
+        className="h-8 w-8 rounded-full object-cover ring-2 ring-white shadow-md"
+      />
+    )}
+  </div>
+);
 
 const Chats = () => {
   const { user } = useAuth();
@@ -821,25 +856,59 @@ const Chats = () => {
                   <div className="relative px-2 sm:px-4 pt-3 sm:pt-4 pb-28 sm:pb-6">
                     <div className="mx-auto w-full max-w-[920px] space-y-1.5 sm:space-y-2">
                       <AnimatePresence initial={false}>
-                        {messages.map((msg, i) => (
-                          <motion.div
-                            key={msg._id || i}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0, transition: { duration: 0.22 } }}
-                            exit={{ opacity: 0, y: 8, transition: { duration: 0.18 } }}
-                          >
-                            <MessageBubble
-                              msg={msg}
-                              uid={user.uid}
-                              onDeleteMe={deleteForMe}
-                              onDeleteEveryone={deleteForEveryone}
-                              onRetry={retryMessage}
-                            />
-                          </motion.div>
-                        ))}
+                        {messages.map((msg, i) => {
+                          const incoming = String(msg.senderId || "") !== String(user.uid);
+                          const prevMsg = messages[i - 1] || null;
+                          const nextMsg = messages[i + 1] || null;
+                          const lastOfGroup = !nextMsg || String(nextMsg.senderId || "") !== String(msg.senderId || "");
+                          return (
+                            <motion.div
+                              key={msg._id || msg.clientTempId || i}
+                              layout="position"
+                              initial={{ opacity: 0, y: 14, scale: 0.92, x: incoming ? -10 : 10 }}
+                              animate={{
+                                opacity: 1,
+                                y: 0,
+                                scale: 1,
+                                x: 0,
+                                transition: { type: "spring", stiffness: 460, damping: 30 },
+                              }}
+                              exit={{ opacity: 0, y: 8, transition: { duration: 0.18 } }}
+                              style={{ transformOrigin: incoming ? "bottom left" : "bottom right" }}
+                              className={incoming ? "flex items-end gap-2" : ""}
+                            >
+                              {incoming && (
+                                <IncomingAvatar
+                                  photo={selectedChat?.withUserPhoto}
+                                  name={headerName}
+                                  show={lastOfGroup}
+                                />
+                              )}
+                              <div className={incoming ? "min-w-0 flex-1" : ""}>
+                                <MessageBubble
+                                  msg={msg}
+                                  uid={user.uid}
+                                  prevMsg={prevMsg}
+                                  nextMsg={nextMsg}
+                                  onDeleteMe={deleteForMe}
+                                  onDeleteEveryone={deleteForEveryone}
+                                  onRetry={retryMessage}
+                                />
+                              </div>
+                            </motion.div>
+                          );
+                        })}
                       </AnimatePresence>
 
-                      {typingStatus && <TypingIndicator />}
+                      <AnimatePresence>
+                        {typingStatus && (
+                          <TypingIndicator
+                            key="typing"
+                            photo={selectedChat?.withUserPhoto}
+                            name={headerName}
+                          />
+                        )}
+                      </AnimatePresence>
 
                       <div ref={bottomRef} />
                     </div>

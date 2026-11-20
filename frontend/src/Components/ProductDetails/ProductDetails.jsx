@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import Swal from "sweetalert2";
+import SellerChatPopup from "../ChatPopup/SellerChatPopup";
 import { promptCurrencyAmount } from "../../utils/promptCurrencyAmount";
 
 const normalizePhone = (number) => {
@@ -328,30 +329,8 @@ const ProductDetails = () => {
       return;
     }
 
-    try {
-      const res = await api.post("/messages", {
-        senderId: user.uid,
-        receiverId: ad.ownerUid,
-
-        senderName: user.displayName || user.email.split("@")[0],
-        senderEmail: user.email,
-        senderPhoto: user.photoURL || null,
-
-        receiverName: ad.ownerName,
-        receiverPhoto: ad.ownerImage || null,
-
-        adId: ad._id,
-        productTitle: ad.title,
-        productImage: ad.images?.[0] || "",
-
-        message: "Hi, I’m interested in this ad.",
-      });
-
-      const convoId = res.data?.conversationId || res.data?._id;
-      navigate(`/chats?conversationId=${convoId}&receiverId=${ad.ownerUid}`);
-    } catch (error) {
-      Swal.fire("Error", "Failed to start chat", "error");
-    }
+    // Open the animated chat pop-up instead of leaving the listing.
+    window.dispatchEvent(new Event("zitheke:open-seller-chat"));
   };
 
   const handleReportChange = (e) => {
@@ -1593,6 +1572,8 @@ const ProductDetails = () => {
           </motion.div>
         </div>
       )}
+
+      <SellerChatPopup ad={ad} user={user} />
 
       {shareToast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] px-4 py-2 rounded-full bg-[#2E3192] text-white text-sm shadow-lg">
