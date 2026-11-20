@@ -1,3 +1,4 @@
+import { formatPrice } from "../../utils/formatPrice.js";
 // src/pages/SellerProfile/SellerProfile.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -621,8 +622,8 @@ const SellerProfile = () => {
                           <p className="text-white font-semibold line-clamp-1">
                             {ad.title}
                           </p>
-                          <p className="text-white/90 text-sm font-semibold mt-1">
-                            MK {ad.price?.toLocaleString("en-IN")}
+                          <p className="price-tag text-white/90 mt-1">
+                            {formatPrice(ad.price)}
                           </p>
                         </div>
                       </div>

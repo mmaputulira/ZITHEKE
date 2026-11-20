@@ -20,3 +20,39 @@
 .hide-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari */
 }
+
+/* =========================================================
+   Prices: one size and weight everywhere a listing price is
+   shown, with aligned digits, so no card's price stands out.
+========================================================= */
+@layer components {
+  .price-tag {
+    font-size: 1rem;
+    line-height: 1.375rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  @media (min-width: 768px) {
+    .price-tag {
+      font-size: 1.0625rem;
+      line-height: 1.5rem;
+    }
+  }
+  /* The headline price on a listing's own page. */
+  .price-tag-lg {
+    font-size: 1.75rem;
+    line-height: 2.25rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  @media (min-width: 768px) {
+    .price-tag-lg {
+      font-size: 2.25rem;
+      line-height: 2.75rem;
+    }
+  }
+}

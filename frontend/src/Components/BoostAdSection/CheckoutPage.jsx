@@ -1,3 +1,4 @@
+import { formatAmount } from "../../utils/formatPrice.js";
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -25,7 +26,7 @@ import airtelLogo from "../../assets/payments/airtel-money.jpg";
 import nationalBankLogo from "../../assets/payments/national-bank-lockup.png";
 import PaymentBrandMark from "./PaymentBrandMark.jsx";
 
-const getDisplayPlanPrice = (plan) => Number(plan?.price || 0).toLocaleString("en-MW");
+const getDisplayPlanPrice = (plan) => formatAmount(plan?.price || 0);
 
 const CheckoutPage = () => {
   const navigate = useNavigate();

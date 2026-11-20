@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { formatPrice } from "../../utils/formatPrice.js";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, ShieldCheck, Truck, Star } from "lucide-react";
@@ -224,9 +225,9 @@ const KitchenwarePromo = () => {
             <div className="text-sm font-semibold line-clamp-2">
               {activeItem?.title || "-"}
             </div>
-            <div className="text-lg font-bold text-[#3B3FA8] mt-1">
+            <div className="price-tag text-[#3B3FA8] mt-1">
               {activeItem?.price
-                ? `MK ${activeItem.price.toLocaleString()}`
+                ? formatPrice(activeItem.price)
                 : "Price on request"}
             </div>
             <div className="text-xs text-gray-600 mt-1">

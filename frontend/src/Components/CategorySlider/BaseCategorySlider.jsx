@@ -521,12 +521,9 @@ const BaseCategorySlider = ({ categoryTitle, category }) => {
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                               {!["Jobs", "Services"].includes(item.category) && (
-                                <p className="text-[22px] md:text-[24px] font-extrabold tracking-tight text-[color:var(--brand)] leading-none flex items-center gap-3">
+                                <p className="price-tag text-[color:var(--brand)] flex items-center gap-3">
                                   <span className="whitespace-nowrap">
-                                    MK{" "}
-                                    {Number(item.price || 0).toLocaleString(
-                                      "en-MW"
-                                    )}
+                                    {formatPrice(item.price || 0)}
                                   </span>
                                   {["New", "Used"].includes(item.condition) &&
                                     !["livestock", "agriculture"].includes(

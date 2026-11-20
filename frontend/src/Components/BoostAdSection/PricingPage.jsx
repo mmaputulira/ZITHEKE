@@ -1,3 +1,4 @@
+import { formatAmount } from "../../utils/formatPrice.js";
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { BadgeCheck, Check, Star, Crown, Rocket } from "lucide-react";
@@ -9,7 +10,7 @@ import useMembershipAccess from "../../hooks/useMembershipAccess.js";
 const getDisplayPlanPrice = (plan) => {
   const price = Number(plan?.price || 0);
   if (price === 0) return "FREE";
-  return `MWK ${price.toLocaleString("en-MW")}`;
+  return `MWK ${formatAmount(price)}`;
 };
 
 const getPlanSubline = (plan) => {

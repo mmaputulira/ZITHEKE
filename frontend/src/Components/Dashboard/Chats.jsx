@@ -1,3 +1,4 @@
+import { formatAmount } from "../../utils/formatPrice.js";
 // src/pages/Chats/Chats.jsx
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -49,7 +50,7 @@ const timeAgoShort = (dateString) => {
 const formatMK = (n) => {
   const num = Number(n);
   if (!isFinite(num)) return "";
-  return num.toLocaleString("en-MW", { maximumFractionDigits: 0 });
+  return formatAmount(num);
 };
 
 const avatarUrl = (photoUrl) => getAvatarSrc(safe(photoUrl, ""));

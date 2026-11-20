@@ -832,8 +832,8 @@ const ProductDetails = () => {
             {/* Price Block */}
             <div className="flex items-center justify-between flex-wrap gap-3">
               {!hidePriceAndDetails && (
-                <p className="text-4xl font-extrabold text-[#2E3192] bg-[#2E3192]/5 px-4 py-2 rounded-2xl shadow-inner">
-                  {formatPrice(ad.price, "MK ")}
+                <p className="price-tag-lg text-[#2E3192] bg-[#2E3192]/5 px-4 py-2 rounded-2xl shadow-inner">
+                  {formatPrice(ad.price)}
                 </p>
               )}
 
@@ -1324,8 +1324,8 @@ const ProductDetails = () => {
                   {/* Price + City */}
                   <div className="flex justify-between items-center mt-3">
                     {!["Jobs", "Services"].includes(item.category) && (
-                      <p className="text-[#2E3192] font-bold">
-                        {formatPrice(item.price, "MK ")}
+                      <p className="price-tag text-[#2E3192]">
+                        {formatPrice(item.price)}
                       </p>
                     )}
                     <span className="text-sm text-gray-500">{item.city}</span>

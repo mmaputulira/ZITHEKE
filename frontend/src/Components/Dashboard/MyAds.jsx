@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { formatPrice } from "../../utils/formatPrice.js";
 import Sidebar from "../../Components/Sidebar/Sidebar.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 import axios from "axios";
@@ -436,8 +437,8 @@ const MyAds = () => {
                       {ad.description}
                     </p>
                     {ad.price && (
-                      <p className="text-[#2E3192] font-semibold text-lg mb-2">
-                         MK {Number(ad.price).toLocaleString()}
+                      <p className="price-tag text-[#2E3192] mb-2">
+                        {formatPrice(ad.price)}
                         {ad.negotiable && (
                           <span className="text-xs text-green-600 ml-1">
                             (Negotiable)
