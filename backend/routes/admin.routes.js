@@ -1,7 +1,7 @@
 import express from "express";
 import adminAuthMiddleware from "../middlewares/adminAuthMiddleware.js";
 import { requireAdminRoles } from "../middlewares/requireAdminRoles.js";
-import { adUpload } from "../middlewares/localUpload.js";
+import { adUpload, singleImageUpload } from "../middlewares/localUpload.js";
 import multerErrorHandler from "../middlewares/multerErrorHandler.js";
 import { validate } from "../middlewares/validate.js";
 import {
@@ -40,6 +40,7 @@ import {
   updateAdminSubcategoryStatus,
   deleteAdminCategory,
   deleteAdminSubcategory,
+  setAdminSubcategoryImage,
 } from "../Controllers/categoryController.js";
 import {
   categoryIdParamSchema,
@@ -248,6 +249,15 @@ router.delete(
   requireAdminRoles("marketplace"),
   validate(categoryIdParamSchema, "params"),
   deleteAdminCategory
+);
+router.post(
+  "/categories/:categoryId/subcategories/:subcategoryId/image",
+  adminAuthMiddleware,
+  requireAdminRoles("marketplace", "content"),
+  validate(subcategoryIdParamSchema, "params"),
+  singleImageUpload,
+  multerErrorHandler,
+  setAdminSubcategoryImage
 );
 router.delete(
   "/categories/:categoryId/subcategories/:subcategoryId",

@@ -1,3 +1,5 @@
+import { optimizeImageFile } from "../utils/optimizeImage.js";
+import { publicPathFromFile, toPublicUrl } from "../utils/uploadPath.js";
 import mongoose from "mongoose";
 import Category from "../models/Category.js";
 import Ad from "../models/Ad.js";
@@ -173,6 +175,8 @@ export const listPublicCategories = async (req, res) => {
               _id: subcategory._id,
               name: subcategory.name,
               slug: subcategory.slug,
+              image: subcategory.image || "",
+              imageHidden: Boolean(subcategory.imageHidden),
             }))
         : [],
     }));
@@ -450,5 +454,46 @@ export const deleteAdminSubcategory = async (req, res) => {
   } catch (error) {
     console.error("Error deleting subcategory:", error);
     return handleError(res, error, "Failed to delete subcategory");
+  }
+};
+
+/* Subcategory pictures: upload a new one, remove it, or go back to the default. */
+export const setAdminSubcategoryImage = async (req, res) => {
+  try {
+    const { categoryId, subcategoryId } = req.params;
+    const category = await findCategoryById(categoryId);
+    const index = getSubcategoryIndex(category, subcategoryId);
+    const subcategory = category.subcategories[index];
+    const mode = String(req.body?.mode || (req.file ? "upload" : "")).toLowerCase();
+
+    if (mode === "upload") {
+      if (!req.file) throw createError(400, "Please choose a picture to upload.");
+      const optimizedPath = await optimizeImageFile(req.file.path, req.file.mimetype);
+      if (optimizedPath !== req.file.path) {
+        req.file.path = optimizedPath;
+        req.file.filename = optimizedPath.split(/[/\\]/).pop();
+      }
+      subcategory.image = toPublicUrl(req, publicPathFromFile(req.file));
+      subcategory.imageHidden = false;
+    } else if (mode === "remove") {
+      subcategory.image = "";
+      subcategory.imageHidden = true;
+    } else if (mode === "default") {
+      subcategory.image = "";
+      subcategory.imageHidden = false;
+    } else {
+      throw createError(400, "Choose to upload, remove or restore the default picture.");
+    }
+
+    category.markModified("subcategories");
+    await category.save();
+    return res.status(200).json({
+      success: true,
+      message: mode === "upload" ? "Picture updated" : mode === "remove" ? "Picture removed" : "Default picture restored",
+      category,
+    });
+  } catch (error) {
+    console.error("Error updating subcategory picture:", error);
+    return handleError(res, error, "Failed to update the subcategory picture");
   }
 };

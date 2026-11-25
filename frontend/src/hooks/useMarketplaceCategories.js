@@ -40,7 +40,9 @@ const decorateCategories = (rows = []) =>
           key: String(sub._id || sub.slug || sub.name),
           name: sub.name,
           slug: sub.slug || normalize(sub.name),
-          image: visualSub?.image || "",
+          // An admin-uploaded picture wins; a removed picture shows none;
+          // otherwise fall back to the built-in picture.
+          image: sub.imageHidden ? "" : sub.image || visualSub?.image || "",
         };
       }),
       image: staticSubs.find((sub) => sub.image)?.image || "",

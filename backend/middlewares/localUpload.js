@@ -70,6 +70,19 @@ export const adUpload = upload.fields([
   { name: "video", maxCount: 1 },
 ]);
 
+// One image only (subcategory pictures and similar admin uploads).
+const imageOnly = multer({
+  storage,
+  limits: { fileSize: 8 * 1024 * 1024, files: 1 },
+  fileFilter: (req, file, cb) => {
+    if (!ALLOWED_IMAGE_MIMES.has(file.mimetype)) {
+      return cb(new Error("Please choose a JPG, PNG or WebP picture."));
+    }
+    cb(null, true);
+  },
+});
+export const singleImageUpload = imageOnly.single("image");
+
 export const mediaUpload = upload.fields([
   { name: "images", maxCount: 9 },
   { name: "video", maxCount: 1 },

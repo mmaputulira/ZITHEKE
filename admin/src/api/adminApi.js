@@ -102,3 +102,15 @@ adminApi.interceptors.response.use(
 );
 
 export default adminApi;
+
+// mode: "upload" (with file), "remove" or "default"
+export const setAdminSubcategoryImage = async (categoryId, subcategoryId, { mode, file }) => {
+  const form = new FormData();
+  form.append("mode", mode);
+  if (file) form.append("image", file);
+  const { data } = await adminApi.post(
+    `/categories/${categoryId}/subcategories/${subcategoryId}/image`,
+    form
+  );
+  return data?.category || null;
+};

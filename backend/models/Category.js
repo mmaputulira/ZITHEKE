@@ -19,6 +19,10 @@ const subcategorySchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    // Picture shown on the home page. Empty means the built-in default picture.
+    image: { type: String, trim: true, default: "" },
+    // True when an admin removed the picture on purpose, so no default is shown.
+    imageHidden: { type: Boolean, default: false },
   },
   { _id: true }
 );

@@ -39,6 +39,7 @@ import SystemHealth from "./Components/Dashboard/SystemHealth.jsx";
 import RiskFlags from "./Components/Dashboard/RiskFlags.jsx";
 import NotificationsCentre from "./Components/Dashboard/NotificationsCentre.jsx";
 import AdminAccess from "./Components/Dashboard/AdminAccess.jsx";
+import WebsiteFooter from "./Components/Dashboard/WebsiteFooter.jsx";
 import SupportCentre from "./Components/Dashboard/SupportCentre.jsx";
 
 
@@ -76,6 +77,7 @@ const AdminLayout = () => {
           <Route path="notifications" element={<AdminPageGuard page="notifications"><NotificationsCentre /></AdminPageGuard>} />
           <Route path="audit-log" element={<AdminPageGuard page="audit-log"><AuditLog /></AdminPageGuard>} />
           <Route path="system-health" element={<AdminPageGuard page="system-health"><SystemHealth /></AdminPageGuard>} />
+          <Route path="website-footer" element={<AdminPageGuard page="website-footer"><WebsiteFooter /></AdminPageGuard>} />
           <Route path="admin-access" element={<AdminPageGuard page="admin-access"><AdminAccess /></AdminPageGuard>} />
           <Route path="category-insight" element={<AdminPageGuard page="category-insight"><CategoryInsight /></AdminPageGuard>} />
           <Route path="user-growth" element={<AdminPageGuard page="user-growth"><UserGrowth /></AdminPageGuard>} />

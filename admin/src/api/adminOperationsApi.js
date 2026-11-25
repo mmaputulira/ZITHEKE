@@ -16,3 +16,5 @@ export const toggleNotification = (id,isActive) => adminApi.patch(`/ops/notifica
 export const getAdminAccess = () => adminApi.get("/ops/admin-access").then(r=>r.data?.data || []);
 export const updateAdminRole = (id,payload) => adminApi.patch(`/ops/admin-access/${id}/role`,typeof payload==='string'?{role:payload}:payload).then(r=>r.data);
 export const getSupportCentre = () => adminApi.get("/ops/support").then(r=>r.data?.data || {messages:[],reports:[]});
+export const getWebsiteFooter = () => adminApi.get("/site/footer").then(r=>r.data);
+export const saveWebsiteFooter = (footer) => adminApi.put("/site/footer",{footer}).then(r=>r.data);

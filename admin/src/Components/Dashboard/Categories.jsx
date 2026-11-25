@@ -15,6 +15,9 @@ import {
   ChevronRight,
   BadgeCheck,
   ShieldAlert,
+  ImagePlus,
+  ImageOff,
+  RotateCcw,
 } from "lucide-react";
 import {
   listAdminCategories,
@@ -26,6 +29,7 @@ import {
   updateAdminSubcategory,
   updateAdminSubcategoryStatus,
   deleteAdminSubcategory,
+  setAdminSubcategoryImage,
 } from "../../api/adminApi";
 
 const emptyCategoryForm = {
@@ -269,6 +273,39 @@ const Categories = () => {
     setNewSubcategoryName("");
     setEditingSubcategory(null);
     setSubcategoryForm(emptySubcategoryForm);
+  };
+
+  /* Subcategory pictures shown on the website home page */
+  const changeSubcategoryImage = async (subcategory, mode, file) => {
+    if (!subcategoryParent?._id) return;
+    if (mode === "remove") {
+      const answer = await Swal.fire({
+        icon: "warning",
+        title: "Remove this picture?",
+        text: `${subcategory.name} will show without a picture on the website.`,
+        showCancelButton: true,
+        confirmButtonText: "Remove picture",
+        confirmButtonColor: "#dc2626",
+      });
+      if (!answer.isConfirmed) return;
+    }
+    try {
+      setActionKey(`subcategory-image-${subcategory._id}`);
+      const updated = await setAdminSubcategoryImage(subcategoryParent._id, subcategory._id, { mode, file });
+      if (updated) syncParentCategory(updated);
+      Swal.fire({
+        toast: true,
+        position: "top-end",
+        timer: 1800,
+        showConfirmButton: false,
+        icon: "success",
+        title: mode === "upload" ? "Picture updated" : mode === "remove" ? "Picture removed" : "Default picture restored",
+      });
+    } catch (error) {
+      Swal.fire("Picture not saved", buildErrorMessage(error, "Failed to update the picture."), "error");
+    } finally {
+      setActionKey("");
+    }
   };
 
   const syncParentCategory = (updatedCategory) => {
@@ -1000,6 +1037,16 @@ const Categories = () => {
                           </form>
                         ) : (
                           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-[#F3F5FF]">
+                                {subcategory.image && !subcategory.imageHidden ? (
+                                  <img src={subcategory.image} alt={subcategory.name} className="h-full w-full object-cover" />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center px-1 text-center text-[10px] font-medium leading-tight text-gray-400">
+                                    {subcategory.imageHidden ? "No picture" : "Default picture"}
+                                  </div>
+                                )}
+                              </div>
                             <div>
                               <div className="flex items-center gap-3">
                                 <h4 className="text-lg font-semibold text-[#1A1D64]">
@@ -1017,6 +1064,7 @@ const Categories = () => {
                                 {subcategory.slug}
                               </p>
                             </div>
+                            </div>
 
                             <div className="flex flex-wrap gap-2">
                               <ActionButton
@@ -1024,6 +1072,41 @@ const Categories = () => {
                                 label="Edit"
                                 onClick={() => beginEditSubcategory(subcategory)}
                               />
+                              <label
+                                className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[#D8DEFF] bg-[#EEF2FF] px-3 py-2 text-xs font-semibold text-[#2E3192] transition hover:bg-[#E6EAFF] ${
+                                  actionKey === `subcategory-image-${subcategory._id}` ? "pointer-events-none opacity-60" : ""
+                                }`}
+                              >
+                                <ImagePlus className="h-3.5 w-3.5" />
+                                {actionKey === `subcategory-image-${subcategory._id}` ? "Uploading..." : "Change picture"}
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/webp"
+                                  className="sr-only"
+                                  onChange={(event) => {
+                                    const file = event.target.files?.[0];
+                                    event.target.value = "";
+                                    if (file) changeSubcategoryImage(subcategory, "upload", file);
+                                  }}
+                                />
+                              </label>
+                              {!subcategory.imageHidden && (
+                                <ActionButton
+                                  icon={ImageOff}
+                                  label="Remove picture"
+                                  tone="danger"
+                                  onClick={() => changeSubcategoryImage(subcategory, "remove")}
+                                  disabled={actionKey === `subcategory-image-${subcategory._id}`}
+                                />
+                              )}
+                              {(subcategory.image || subcategory.imageHidden) && (
+                                <ActionButton
+                                  icon={RotateCcw}
+                                  label="Use default"
+                                  onClick={() => changeSubcategoryImage(subcategory, "default")}
+                                  disabled={actionKey === `subcategory-image-${subcategory._id}`}
+                                />
+                              )}
                               <ActionButton
                                 icon={Power}
                                 label={

@@ -1,6 +1,7 @@
 import { reviewMerchant } from "../Controllers/accountController.js";
 import { listAdminOrders } from "../Controllers/orderController.js";
 import express from "express";
+import { getAdminFooter, updateAdminFooter } from "../Controllers/siteContentController.js";
 import { requireAdminRoles } from "../middlewares/requireAdminRoles.js";
 import {
   getOperationsDashboard,
@@ -44,6 +45,9 @@ router.patch("/ops/notifications/:id", requireAdminRoles("admin","support","mark
 router.get("/ops/admin-access", requireAdminRoles("admin"), listAdminAccess);
 router.patch("/ops/admin-access/:id/role", requireAdminRoles("admin"), updateAdminRole);
 router.get("/ops/support", requireAdminRoles("support","admin","marketplace","moderator"), getSupportCentre);
+
+router.get("/site/footer", requireAdminRoles("marketplace", "content"), getAdminFooter);
+router.put("/site/footer", requireAdminRoles("marketplace", "content"), updateAdminFooter);
 
 router.get("/ops/me/profile", requireAdminRoles(), getOwnAdminProfile);
 router.patch("/ops/me/profile", requireAdminRoles(), updateOwnAdminProfile);

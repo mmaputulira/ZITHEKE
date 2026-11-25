@@ -29,6 +29,7 @@ export const permissionForRequest=req=>{
   if(/^\/(?:ops\/)?users(?:\/|$)/.test(url))return read?"accounts.read":"accounts.write";
   if(/^\/ops\/ads\/bulk$/.test(url))return "ads.moderate";
   if(/^\/ads(?:\/|$)/.test(url))return read?"ads.read":/\/(approve|reject)$/.test(url)?"ads.moderate":"ads.write";
+  if(/^\/site\/footer$/.test(url))return read?"site.read":"site.write";
   if(/^\/categories(?:\/|$)/.test(url))return read?"categories.read":"categories.write";
   if(/^\/reports(?:\/|$)/.test(url))return read?"reports.read":/\/delete-ad$/.test(url)?"ads.moderate":"reports.write";
   if(/^\/(?:conversations|messages)(?:\/|$)/.test(url))return read?"messages.read":"messages.write";

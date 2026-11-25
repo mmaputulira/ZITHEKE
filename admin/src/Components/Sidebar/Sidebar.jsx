@@ -1,6 +1,6 @@
 import { useAdminAccess } from "../../AdminRoutes/AdminAccessContext.jsx";
 import policy from "../../adminAccess.json";
-import React,{useMemo,useState}from"react";import{NavLink,useNavigate}from"react-router-dom";import Swal from"sweetalert2";import{LayoutDashboard,WalletCards,CreditCard,BadgeDollarSign,Users,ListChecks,FolderOpen,Tags,Inbox,MessageSquare,AlertTriangle,LifeBuoy,BellRing,Shield,ScrollText,HeartPulse,Settings,LogOut,Menu,X,BarChart3}from"lucide-react";
+import React,{useMemo,useState}from"react";import{NavLink,useNavigate}from"react-router-dom";import Swal from"sweetalert2";import{LayoutDashboard,WalletCards,CreditCard,BadgeDollarSign,Users,ListChecks,FolderOpen,Tags,Inbox,MessageSquare,AlertTriangle,LifeBuoy,BellRing,Shield,ScrollText,HeartPulse,Settings,LogOut,Menu,X,BarChart3,PanelBottom}from"lucide-react";
 const AdminSidebar=()=>{const[mobile,setMobile]=useState(false);const navigate=useNavigate();const {admin:data,can:allowed}=useAdminAccess();const role=(data.roles||[]).map(value=>policy.labels[value]||value).join(" · ");const menus=useMemo(()=>[
 {n:'Dashboard',i:LayoutDashboard,p:'/admin'},
 {n:'Reconciliation',i:WalletCards,p:'/admin/reconciliation',r:['finance','reporting']},
@@ -11,6 +11,7 @@ const AdminSidebar=()=>{const[mobile,setMobile]=useState(false);const navigate=u
 {n:'Advert Moderation',i:ListChecks,p:'/admin/ads',r:['marketplace','moderator']},
 {n:'All Ads',i:FolderOpen,p:'/admin/ads-library',r:['marketplace','moderator']},
 {n:'Categories',i:Tags,p:'/admin/categories',r:['marketplace']},
+{n:'Website Footer',i:PanelBottom,p:'/admin/website-footer',r:['marketplace','content']},
 {n:'Reported Listings',i:AlertTriangle,p:'/admin/reports',r:['marketplace','moderator','support']},
 {n:'Support & Disputes',i:LifeBuoy,p:'/admin/support',r:['support','marketplace','moderator']},
 {n:'Inbox',i:Inbox,p:'/admin/contact-inbox',r:['support']},
