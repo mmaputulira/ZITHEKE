@@ -74,6 +74,14 @@
       "marketplace",
       "content"
     ],
+    "site.read": [
+      "marketplace",
+      "content"
+    ],
+    "site.write": [
+      "marketplace",
+      "content"
+    ],
     "orders.read": [
       "marketplace",
       "support",
@@ -163,6 +171,7 @@
     "revenue-subscriptions": "finance.read",
     "category-insight": "dashboard.read",
     "user-growth": "dashboard.read",
-    "settings": "settings.own"
+    "settings": "settings.own",
+    "website-footer": "site.read"
   }
 }

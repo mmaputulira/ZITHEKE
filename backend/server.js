@@ -51,6 +51,7 @@ import subscriptionRoutes from "./routes/subscriptionRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
+import siteContentRoutes from "./routes/siteContentRoutes.js";
 import paymentReconciliationService from "./Services/payments/paymentReconciliation.service.js";
 import subscriptionExpiryService from "./Services/payments/subscriptionExpiry.service.js";
 
@@ -238,6 +239,7 @@ app.use("/api/search", searchRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/plans", planRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/site", siteContentRoutes);
 
 app.use("/api/email", emailRoutes);
 app.use("/api/auth", authRoutes);

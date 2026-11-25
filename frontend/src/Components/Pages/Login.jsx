@@ -26,8 +26,8 @@ const Login = ({ accountType = "merchant" }) => {
   const buyerPortal = accountType === "buyer";
   // One account for buying and selling: after sign-in the person picks
   // Customer or Seller, so start on the side they used last.
-  const destination = location.state?.returnTo?.startsWith("/ad/") ? location.state.returnTo : homeForMode(savedMode);
   const { setUser, requestModeChoice, mode: savedMode } = useAuth();
+  const destination = location.state?.returnTo?.startsWith("/ad/") ? location.state.returnTo : homeForMode(savedMode);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");

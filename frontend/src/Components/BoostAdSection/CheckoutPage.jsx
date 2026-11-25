@@ -157,9 +157,9 @@ const CheckoutPage = () => {
               </div>
               <h1 className="mt-5 text-3xl font-semibold tracking-tight text-[#1c2454] md:text-5xl">Choose how you want to pay</h1>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
-                {isAccountMode
+                {nepgEnabled
                   ? "Choose NEPG, Airtel Money, or National Bank. Electronic payments are confirmed automatically, while bank transfers are activated after your Proof of Payment is reviewed."
-                  : "Choose NEPG, Airtel Money, or National Bank. Electronic payments are confirmed automatically, while bank transfers are activated after your Proof of Payment is reviewed."}
+                  : "Choose Airtel Money or National Bank. Airtel Money payments are confirmed automatically, while bank transfers are activated after your Proof of Payment is reviewed."}
               </p>
               <div className="mt-7 grid gap-3 text-sm text-slate-700">
                 <Step text="Choose how you would like to pay." />

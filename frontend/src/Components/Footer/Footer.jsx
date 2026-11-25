@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Facebook,
@@ -8,8 +8,68 @@ import {
   Phone,
   MapPin,
 } from "lucide-react";
+import api from "../../api/axios";
+
+// Shown while loading, and if the server can't be reached.
+const DEFAULT_FOOTER = {
+  about:
+    "Your trusted marketplace to buy, sell, and connect locally with people around you. Safe, simple, and smart.",
+  social: { facebook: "", twitter: "", instagram: "" },
+  quickLinks: [
+    { label: "About Us", url: "/about" },
+    { label: "Privacy Policy", url: "/privacy-policy" },
+    { label: "Terms & Conditions", url: "/terms" },
+    { label: "Contact Support", url: "/contact" },
+  ],
+  popularCategories: [
+    { label: "Mobiles & Tablets", url: "/category/Mobiles" },
+    { label: "Electronics", url: "/category/Electronics" },
+    { label: "Vehicles", url: "/category/Vehicles" },
+    { label: "Furniture", url: "/category/Furniture" },
+  ],
+  contact: { address: "Lilongwe, Malawi", email: "support@zitheke.com", phone: "+265 980634536" },
+};
+
+let cachedFooter = null;
+
+const FooterLink = ({ link }) => {
+  const external = /^https?:\/\//i.test(link.url);
+  return (
+    <a
+      href={link.url}
+      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+      className="cursor-pointer hover:text-[#2E3192]"
+    >
+      {link.label}
+    </a>
+  );
+};
 
 const Footer = () => {
+  const [footer, setFooter] = useState(cachedFooter || DEFAULT_FOOTER);
+
+  useEffect(() => {
+    if (cachedFooter) return undefined;
+    let alive = true;
+    api
+      .get("/site/footer")
+      .then(({ data }) => {
+        if (!data?.footer) return;
+        cachedFooter = { ...DEFAULT_FOOTER, ...data.footer };
+        if (alive) setFooter(cachedFooter);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const socials = [
+    { key: "facebook", Icon: Facebook, label: "Facebook" },
+    { key: "twitter", Icon: Twitter, label: "Twitter" },
+    { key: "instagram", Icon: Instagram, label: "Instagram" },
+  ].filter(({ key }) => footer.social?.[key]);
+
   return (
     <footer className="relative bg-gradient-to-br from-[#ffffff] via-[#F8FAFC] to-[#F2F4FF] text-[#2E3192] pt-16 pb-8 overflow-hidden font-[Poppins]">
       {/* Floating background glows */}
@@ -26,21 +86,25 @@ const Footer = () => {
           >
             <h2 className="text-2xl font-bold mb-3">Zitheke</h2>
             <p className="text-gray-600 text-sm leading-relaxed mb-4">
-              Your trusted marketplace to buy, sell, and connect locally with
-              people around you. Safe, simple, and smart.
+              {footer.about}
             </p>
 
-            <div className="flex items-center gap-4">
-              <a href="#" className="p-2 bg-[#2E3192]/10 rounded-full">
-                <Facebook size={18} />
-              </a>
-              <a href="#" className="p-2 bg-[#2E3192]/10 rounded-full">
-                <Twitter size={18} />
-              </a>
-              <a href="#" className="p-2 bg-[#2E3192]/10 rounded-full">
-                <Instagram size={18} />
-              </a>
-            </div>
+            {socials.length > 0 && (
+              <div className="flex items-center gap-4">
+                {socials.map(({ key, Icon, label }) => (
+                  <a
+                    key={key}
+                    href={footer.social[key]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    className="p-2 bg-[#2E3192]/10 rounded-full hover:bg-[#2E3192]/20"
+                  >
+                    <Icon size={18} />
+                  </a>
+                ))}
+              </div>
+            )}
           </motion.div>
 
           {/* 2️⃣ Quick Links */}
@@ -51,46 +115,11 @@ const Footer = () => {
           >
             <h3 className="font-semibold text-lg mb-3">Quick Links</h3>
             <ul className="space-y-2 text-gray-600 text-sm">
-              <li>
-                <a
-                  href="/about"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="cursor-pointer hover:text-[#2E3192]"
-                >
-                  About Us
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/privacy-policy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="cursor-pointer hover:text-[#2E3192]"
-                >
-                  Privacy Policy
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/terms"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="cursor-pointer hover:text-[#2E3192]"
-                >
-                  Terms & Conditions
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/contact"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="cursor-pointer hover:text-[#2E3192]"
-                >
-                  Contact Support
-                </a>
-              </li>
+              {(footer.quickLinks || []).map((link) => (
+                <li key={`${link.label}-${link.url}`}>
+                  <FooterLink link={link} />
+                </li>
+              ))}
             </ul>
           </motion.div>
 
@@ -102,47 +131,11 @@ const Footer = () => {
           >
             <h3 className="font-semibold text-lg mb-3">Popular Categories</h3>
             <ul className="space-y-2 text-gray-600 text-sm">
-              <li>
-                <a
-                  href="/category/Mobiles"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="cursor-pointer hover:text-[#2E3192]"
-                >
-                  Mobiles & Tablets
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/category/Electronics"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="cursor-pointer hover:text-[#2E3192]"
-                >
-                  Electronics
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/category/Vehicles"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="cursor-pointer hover:text-[#2E3192]"
-                >
-                  Vehicles
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/category/Furniture"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="cursor-pointer hover:text-[#2E3192]"
-                >
-                  Furniture
-
-                </a>
-              </li>
+              {(footer.popularCategories || []).map((link) => (
+                <li key={`${link.label}-${link.url}`}>
+                  <FooterLink link={link} />
+                </li>
+              ))}
             </ul>
           </motion.div>
 
@@ -154,15 +147,23 @@ const Footer = () => {
           >
             <h3 className="font-semibold text-lg mb-3">Contact Us</h3>
             <ul className="space-y-3 text-gray-600 text-sm">
-              <li className="flex gap-2">
-                <MapPin size={16} /> Lilongwe, Malawi
-              </li>
-              <li className="flex gap-2">
-                <Mail size={16} /> support@zitheke.com
-              </li>
-              <li className="flex gap-2">
-                <Phone size={16} /> +265 980634536
-              </li>
+              {footer.contact?.address && (
+                <li className="flex gap-2">
+                  <MapPin size={16} className="shrink-0 mt-0.5" /> {footer.contact.address}
+                </li>
+              )}
+              {footer.contact?.email && (
+                <li className="flex gap-2">
+                  <Mail size={16} className="shrink-0 mt-0.5" />
+                  <a href={`mailto:${footer.contact.email}`} className="hover:text-[#2E3192] break-all">{footer.contact.email}</a>
+                </li>
+              )}
+              {footer.contact?.phone && (
+                <li className="flex gap-2">
+                  <Phone size={16} className="shrink-0 mt-0.5" />
+                  <a href={`tel:${footer.contact.phone.replace(/\s+/g, "")}`} className="hover:text-[#2E3192]">{footer.contact.phone}</a>
+                </li>
+              )}
             </ul>
           </motion.div>
         </div>

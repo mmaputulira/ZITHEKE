@@ -435,12 +435,12 @@ const AirtelPaymentModal = ({
         onOpenChange(nextOpen);
       }}
     >
-      <DialogContent className="w-[95vw] max-w-[28rem] overflow-hidden rounded-[2rem] border border-[#E5E9FF] bg-white p-0 text-[#14213d] shadow-[0_30px_90px_-40px_rgba(15,23,42,0.35)] sm:rounded-[2rem]">
+      <DialogContent className="w-[95vw] max-w-[28rem] max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain rounded-[2rem] border border-[#E5E9FF] bg-white p-0 text-[#14213d] shadow-[0_30px_90px_-40px_rgba(15,23,42,0.35)] sm:rounded-[2rem]">
         <div className="relative">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(46,49,146,0.08),_transparent_52%),radial-gradient(circle_at_bottom_right,_rgba(244,180,0,0.08),_transparent_40%)]" />
           <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(46,49,146,0.18)_1px,transparent_1px),linear-gradient(90deg,rgba(46,49,146,0.18)_1px,transparent_1px)] [background-size:22px_22px]" />
 
-          <div className="relative z-10 p-6 sm:p-7">
+          <div className="relative z-10 p-5 sm:p-7 [@media(max-height:760px)]:sm:p-5">
             <DialogHeader className="space-y-4 text-left">
               <PaymentBrandMark
                 src={airtelLogo}

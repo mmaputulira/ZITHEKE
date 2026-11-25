@@ -16,7 +16,7 @@ export const permissionForRequest=req=>{
   const url=String(req.originalUrl||req.url||"").split("?")[0].replace(/^\/api\/admin/,"");
   const read=["GET","HEAD"].includes(req.method);
   if(/^\/ops\/me\/(profile|password)$/.test(url))return "settings.own";
-  if(/^\/ops\/admin-access(?:\/[^/]+\/role)?$/.test(url))return "access.manage";
+  if(/^\/ops\/admin-access(?:\/apply-roster|\/[^/]+(?:\/role|\/password)?)?$/.test(url))return "access.manage";
   if(/\/purge$/.test(url))return "data.purge";
   if(/^\/(ops\/dashboard|overview)$/.test(url))return read?"dashboard.read":null;
   if(/^\/ops\/reconciliation$/.test(url))return read?"finance.read":null;
@@ -29,6 +29,7 @@ export const permissionForRequest=req=>{
   if(/^\/(?:ops\/)?users(?:\/|$)/.test(url))return read?"accounts.read":"accounts.write";
   if(/^\/ops\/ads\/bulk$/.test(url))return "ads.moderate";
   if(/^\/ads(?:\/|$)/.test(url))return read?"ads.read":/\/(approve|reject)$/.test(url)?"ads.moderate":"ads.write";
+  if(/^\/site\/footer$/.test(url))return read?"site.read":"site.write";
   if(/^\/categories(?:\/|$)/.test(url))return read?"categories.read":"categories.write";
   if(/^\/reports(?:\/|$)/.test(url))return read?"reports.read":/\/delete-ad$/.test(url)?"ads.moderate":"reports.write";
   if(/^\/(?:conversations|messages)(?:\/|$)/.test(url))return read?"messages.read":"messages.write";

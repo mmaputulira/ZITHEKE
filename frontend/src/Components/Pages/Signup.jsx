@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../../firebase";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Mail, Lock, User, Phone } from "lucide-react";
+import { Mail, Lock, User, Phone, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../../context/AuthContext.jsx";
 
 const Signup = ({ accountType = "merchant" }) => {
@@ -16,6 +16,7 @@ const Signup = ({ accountType = "merchant" }) => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -242,18 +243,37 @@ const Signup = ({ accountType = "merchant" }) => {
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                className="w-full pl-10 py-3 border rounded-xl focus:ring-2 focus:ring-[#2E3192]"
+                autoComplete="new-password"
+                className="w-full pl-10 pr-11 py-3 border rounded-xl focus:ring-2 focus:ring-[#2E3192]"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-gray-400 hover:text-[#2E3192]"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
 
             {/* PASSWORD STRENGTH INDICATOR */}
-            <div className="h-[3px] w-full bg-gray-200 rounded-full overflow-hidden">
-              <div className="h-full w-[40%] bg-[#F4B400] rounded-full"></div>
-            </div>
+            {(() => {
+              const score = [password.length >= 8, password.length >= 12, /[A-Z]/.test(password) && /[a-z]/.test(password), /\d/.test(password), /[^A-Za-z0-9]/.test(password)].filter(Boolean).length;
+              const level = !password ? null : score <= 2 ? ["Weak", "bg-red-400", "w-1/3"] : score <= 3 ? ["Fair", "bg-[#F4B400]", "w-2/3"] : ["Strong", "bg-emerald-500", "w-full"];
+              return (
+                <div>
+                  <div className="h-[3px] w-full bg-gray-200 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-300 ${level ? `${level[1]} ${level[2]}` : "w-0"}`}></div>
+                  </div>
+                  {level && <p className="mt-1 text-[11px] text-gray-500">Password strength: {level[0]}</p>}
+                </div>
+              );
+            })()}
 
             <button
               type="submit"

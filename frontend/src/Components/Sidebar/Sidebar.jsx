@@ -7,6 +7,8 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import {
   Menu,
   X,
+  ChevronsLeft,
+  ChevronsRight,
   LayoutDashboard,
   MessageCircle,
   Heart,
@@ -54,13 +56,29 @@ const Sidebar = () => {
         setOpen(false);
         setMobileOpen(false);
       } else {
-        setOpen(true);
+        // Small laptops start with the slim icon sidebar so pages keep their room.
+        setOpen(window.innerWidth >= 1280);
       }
     };
     check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
+    let lastWidth = window.innerWidth;
+    const onResize = () => {
+      // Only re-decide when the width really changes (mobile browsers fire
+      // resize when the address bar hides).
+      if (Math.abs(window.innerWidth - lastWidth) < 40) return;
+      lastWidth = window.innerWidth;
+      check();
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  // Tell the page layout how much room the sidebar takes, so content sits beside it.
+  useEffect(() => {
+    const width = isMobile ? 0 : open ? SIDEBAR_WIDTH : COLLAPSED_WIDTH;
+    document.documentElement.style.setProperty("--sidebar-width", `${width}px`);
+    return () => document.documentElement.style.removeProperty("--sidebar-width");
+  }, [isMobile, open]);
 
   const handleNavClick = () => {
     if (isMobile) setMobileOpen(false);
@@ -104,7 +122,8 @@ const Sidebar = () => {
       {isMobile && (
         <button
           onClick={() => setMobileOpen(true)}
-          className="fixed top-4 left-4 z-50 p-2 rounded-xl bg-[var(--brand)] text-white shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2"
+          aria-label="Open menu"
+          className="fixed top-3 left-3 z-50 p-2 rounded-xl bg-[#2E3192] text-white shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2"
         >
           <Menu size={22} />
         </button>
@@ -171,9 +190,12 @@ const Sidebar = () => {
 
           <button
             onClick={() => (isMobile ? setMobileOpen(false) : setOpen(!open))}
-            className="absolute top-5 right-4 text-[#1A1D64]/70 focus:outline-none"
+            aria-label={isMobile ? "Close menu" : open ? "Collapse menu" : "Expand menu"}
+            className={`absolute text-[#1A1D64]/70 hover:text-[#2E3192] focus:outline-none ${
+              !isMobile && !open ? "top-6 right-2" : "top-5 right-4"
+            }`}
           >
-            <X size={18} />
+            {isMobile ? <X size={18} /> : open ? <ChevronsLeft size={18} /> : <ChevronsRight size={16} />}
           </button>
         </div>
 
