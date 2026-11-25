@@ -14,6 +14,11 @@ export const getNotifications = () => adminApi.get("/ops/notifications").then(r=
 export const createNotification = (payload) => adminApi.post("/ops/notifications",payload).then(r=>r.data?.data);
 export const toggleNotification = (id,isActive) => adminApi.patch(`/ops/notifications/${id}`,{isActive}).then(r=>r.data?.data);
 export const getAdminAccess = () => adminApi.get("/ops/admin-access").then(r=>r.data?.data || []);
+export const getStaffAccess = () => adminApi.get("/ops/admin-access").then(r=>({staff:r.data?.data || [],roster:r.data?.roster || []}));
+export const createStaff = (payload) => adminApi.post("/ops/admin-access",payload).then(r=>r.data);
+export const updateStaff = (id,payload) => adminApi.patch(`/ops/admin-access/${id}`,payload).then(r=>r.data);
+export const setStaffPassword = (id,password) => adminApi.post(`/ops/admin-access/${id}/password`,{password}).then(r=>r.data);
+export const applyStaffRoster = () => adminApi.post("/ops/admin-access/apply-roster").then(r=>r.data);
 export const updateAdminRole = (id,payload) => adminApi.patch(`/ops/admin-access/${id}/role`,typeof payload==='string'?{role:payload}:payload).then(r=>r.data);
 export const getSupportCentre = () => adminApi.get("/ops/support").then(r=>r.data?.data || {messages:[],reports:[]});
 export const getWebsiteFooter = () => adminApi.get("/site/footer").then(r=>r.data);

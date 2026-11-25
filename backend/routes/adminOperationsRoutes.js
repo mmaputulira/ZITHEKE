@@ -19,6 +19,10 @@ import {
   toggleNotification,
   listAdminAccess,
   updateAdminRole,
+  createStaff,
+  updateStaff,
+  setStaffPassword,
+  applyStaffRoster,
   getSupportCentre,
   getOwnAdminProfile,
   updateOwnAdminProfile,
@@ -44,6 +48,10 @@ router.post("/ops/notifications", requireAdminRoles("admin","support","marketpla
 router.patch("/ops/notifications/:id", requireAdminRoles("admin","support","marketplace"), toggleNotification);
 router.get("/ops/admin-access", requireAdminRoles("admin"), listAdminAccess);
 router.patch("/ops/admin-access/:id/role", requireAdminRoles("admin"), updateAdminRole);
+router.post("/ops/admin-access", requireAdminRoles("admin"), createStaff);
+router.post("/ops/admin-access/apply-roster", requireAdminRoles("admin"), applyStaffRoster);
+router.patch("/ops/admin-access/:id", requireAdminRoles("admin"), updateStaff);
+router.post("/ops/admin-access/:id/password", requireAdminRoles("admin"), setStaffPassword);
 router.get("/ops/support", requireAdminRoles("support","admin","marketplace","moderator"), getSupportCentre);
 
 router.get("/site/footer", requireAdminRoles("marketplace", "content"), getAdminFooter);

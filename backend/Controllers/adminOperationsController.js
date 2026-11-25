@@ -182,7 +182,104 @@ export const listNotifications = async (req,res) => { try{const data=await Admin
 export const createNotification = async (req,res) => { try{const {title,message,audience="all",targetUserId=null,severity="info",expiresAt=null}=req.body||{}; if(!String(title||"").trim()||!String(message||"").trim())return fail(res,"Title and message are required"); if(audience==="user"&&!objectId(targetUserId))return fail(res,"A valid target user is required"); const item=await AdminNotification.create({title:String(title).trim(),message:String(message).trim(),audience,targetUserId:audience==="user"?targetUserId:null,severity,expiresAt:expiresAt?new Date(expiresAt):null,createdBy:req.admin?.id||null}); return ok(res,{data:item},201);}catch(e){return fail(res,e.message||"Failed to publish notification",500);} };
 export const toggleNotification = async (req,res) => { try{if(!objectId(req.params.id))return fail(res,"Invalid notification ID"); const item=await AdminNotification.findByIdAndUpdate(req.params.id,{isActive:Boolean(req.body.isActive)},{new:true});if(!item)return fail(res,"Notification not found",404);return ok(res,{data:item});}catch(e){return fail(res,e.message||"Failed to update notification",500);} };
 
-export const listAdminAccess = async (req,res) => { try{const data=await Admin.find().select("email name role roles active createdAt updatedAt").sort({createdAt:1}).lean();return ok(res,{data});}catch(e){return fail(res,e.message||"Failed to load administrators",500);} };
+/* ======================
+   STAFF ACCESS (Super Administrator only)
+====================== */
+const STAFF_FIELDS="email name phone role roles active mustChangePassword passwordChangedAt createdAt updatedAt";
+const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const passwordProblem=password=>{
+  if(password.length<12)return "The password must be at least 12 characters.";
+  if(Buffer.byteLength(password,"utf8")>72)return "The password is too long.";
+  if(!/[A-Za-z]/.test(password)||!/[0-9]/.test(password))return "Use letters and numbers in the password.";
+  return "";
+};
+const cleanRoles=roles=>Array.isArray(roles)?[...new Set(roles.map(String))]:[];
+const activeSuperAdminCount=()=>Admin.countDocuments({active:{$ne:false},$or:[{roles:"super_admin"},{roles:{$exists:false},role:"super_admin"}]});
+const staffRow=item=>({...item,roles:adminRoles(item),password:undefined,hasPassword:true});
+const loadRoster=async()=>{try{const fs=await import("node:fs/promises");return JSON.parse(await fs.readFile(new URL("../constants/zithekeStaff.json",import.meta.url),"utf8"));}catch{return []}};
+
+export const listAdminAccess = async (req,res) => {
+  try{
+    const [rows,roster]=await Promise.all([Admin.find().select(STAFF_FIELDS).sort({createdAt:1}).lean(),loadRoster()]);
+    const emails=new Set(rows.map(row=>row.email));
+    return ok(res,{data:rows.map(staffRow),roster:roster.map(item=>({...item,present:emails.has(item.email)}))});
+  }catch(e){return fail(res,e.message||"Failed to load administrators",500);}
+};
+
+export const createStaff = async (req,res) => {
+  try{
+    const email=String(req.body.email||"").trim().toLowerCase();
+    const name=String(req.body.name||"").trim().slice(0,120);
+    const phone=String(req.body.phone||"").trim().slice(0,40);
+    const password=String(req.body.password||"");
+    const roles=cleanRoles(req.body.roles);
+    if(!name)return fail(res,"Enter the staff member's name.");
+    if(!EMAIL_RE.test(email))return fail(res,"Enter a valid email address.");
+    if(!roles.length||roles.some(role=>!Object.hasOwn(roleLabels,role)))return fail(res,"Choose at least one job role.");
+    const problem=passwordProblem(password);if(problem)return fail(res,problem);
+    if(await Admin.exists({email}))return fail(res,"A staff account with this email already exists.",409);
+    const created=await Admin.create({email,name,phone,roles,role:roles[0],password:await bcrypt.hash(password,12),mustChangePassword:true,active:true});
+    const data=await Admin.findById(created._id).select(STAFF_FIELDS).lean();
+    return ok(res,{data:staffRow(data),message:`${name} can now sign in with this email and the temporary password. They will be asked to choose their own password.`},201);
+  }catch(e){
+    if(e?.code===11000)return fail(res,"A staff account with this email already exists.",409);
+    return fail(res,e.message||"Unable to add the staff member",500);
+  }
+};
+
+export const updateStaff = async (req,res) => {
+  try{
+    if(!objectId(req.params.id))return fail(res,"Invalid staff ID");
+    const current=await Admin.findById(req.params.id);if(!current)return fail(res,"Staff member not found",404);
+    if(req.body.name!==undefined){const name=String(req.body.name||"").trim().slice(0,120);if(!name)return fail(res,"Enter the staff member's name.");current.name=name;}
+    if(req.body.phone!==undefined)current.phone=String(req.body.phone||"").trim().slice(0,40);
+    if(req.body.active!==undefined){
+      const active=Boolean(req.body.active);
+      if(!active){
+        if(String(current._id)===String(req.admin.id))return fail(res,"You cannot switch off your own account.",409);
+        if(adminRoles(current).includes("super_admin")&&current.active!==false&&await activeSuperAdminCount()<=1)return fail(res,"The last active Super Administrator cannot be switched off.",409);
+        if(current.active!==false)current.tokenVersion=(current.tokenVersion||0)+1; // signs them out
+      }
+      current.active=active;
+    }
+    await current.save();
+    const data=await Admin.findById(current._id).select(STAFF_FIELDS).lean();
+    return ok(res,{data:staffRow(data),message:"Staff details saved."});
+  }catch(e){return fail(res,e.message||"Unable to update the staff member",500)}
+};
+
+export const setStaffPassword = async (req,res) => {
+  try{
+    if(!objectId(req.params.id))return fail(res,"Invalid staff ID");
+    if(String(req.params.id)===String(req.admin.id))return fail(res,"Change your own password from Settings.",409);
+    const password=String(req.body.password||"");
+    const problem=passwordProblem(password);if(problem)return fail(res,problem);
+    const current=await Admin.findById(req.params.id);if(!current)return fail(res,"Staff member not found",404);
+    current.password=await bcrypt.hash(password,12);
+    current.mustChangePassword=true;
+    current.tokenVersion=(current.tokenVersion||0)+1;
+    await current.save();
+    return ok(res,{message:`Temporary password set for ${current.name||current.email}. They will choose their own password when they next sign in.`});
+  }catch(e){return fail(res,e.message||"Unable to set the password",500)}
+};
+
+// Applies the approved Zitheke job-role sheet to staff accounts that already exist.
+export const applyStaffRoster = async (req,res) => {
+  try{
+    const roster=await loadRoster();
+    const updated=[],missing=[];
+    for(const item of roster){
+      const current=await Admin.findOne({email:item.email});
+      if(!current){missing.push(item);continue;}
+      const before=adminRoles(current);
+      current.roles=item.roles;current.role=item.roles[0];
+      if(!current.name&&item.name)current.name=item.name;
+      await current.save();
+      updated.push({email:item.email,name:current.name,before,after:item.roles});
+    }
+    return ok(res,{updated,missing,message:missing.length?`Job roles applied to ${updated.length} staff. ${missing.length} on the sheet have no account yet: add them below.`:`Job roles applied to all ${updated.length} staff on the sheet.`});
+  }catch(e){return fail(res,e.message||"Unable to apply the job roles",500)}
+};
 export const updateAdminRole = async (req,res) => {
  try {
   if(!objectId(req.params.id))return fail(res,"Invalid administrator ID");
